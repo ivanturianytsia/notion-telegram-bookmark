@@ -1,0 +1,28 @@
+{
+  "name": "notion-telegram-bookmark",
+  "version": "1.0.0",
+  "description": "App for saving bookmarks using Notion API and Telegram bot as interface.",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node ./dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ivanturianytsia/notion-telegram-bookmark.git"
+  },
+  "author": "Ivan Turianytsia",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ivanturianytsia/notion-telegram-bookmark/issues"
+  },
+  "homepage": "https://github.com/ivanturianytsia/notion-telegram-bookmark#readme",
+  "dependencies": {
+    "@notionhq/client": "^0.2.3",
+    "@tsconfig/recommended": "^1.0.1",
+    "@types/node": "^16.4.10",
+    "telegraf": "^4.4.1",
+    "typescript": "^4.3.5"
+  }
+}
