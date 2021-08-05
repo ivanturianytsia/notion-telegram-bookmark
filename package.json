@@ -4,6 +4,7 @@
   "description": "App for saving bookmarks using Notion API and Telegram bot as interface.",
   "main": "index.js",
   "scripts": {
+    "preinstall": "echo \"#!/bin/sh\nnpm run build\ngit add dist\" >> .git/hooks/pre-commit",
     "build": "tsc",
     "start": "node ./dist/index.js",
     "start:dev": "npm run build && npm start",
