@@ -114,7 +114,7 @@ function createBookmark(book, pageNumber) {
 }
 function getProgress(book, pageNumber) {
     const pageTotal = getBookPageTotal(book);
-    return pageTotal ? Math.ceil(pageNumber * 100 / pageTotal) : null;
+    return pageTotal ? Math.round(pageNumber * 100 / pageTotal) : null;
 }
 function getBookPageTotal(book) {
     return book.properties.Pages.type === 'number'
