@@ -38,7 +38,7 @@ bot.on('text', async ctx => {
 if (process.env.WEBHOOK_HOST && process.env.PORT) {
   bot.launch({
     webhook: {
-      host: process.env.WEBHOOK_HOST,
+      domain: process.env.WEBHOOK_HOST,
       port: parseInt(process.env.PORT),
       hookPath: '/webhook',
     }
@@ -46,6 +46,9 @@ if (process.env.WEBHOOK_HOST && process.env.PORT) {
 } else {
   bot.launch()
 }
+
+process.once('SIGINT', () => bot.stop('SIGINT'))
+process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
 function getCurrentBooks() {
   return notion.databases.query({
