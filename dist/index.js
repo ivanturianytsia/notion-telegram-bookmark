@@ -48,6 +48,7 @@ if (process.env.WEBHOOK_HOST && process.env.PORT) {
         webhook: {
             host: process.env.WEBHOOK_HOST,
             port: parseInt(process.env.PORT),
+            hookPath: '/webhook',
         }
     });
 }
