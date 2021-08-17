@@ -15,7 +15,9 @@ bot.on('text', async ctx => {
       if (currentBook) {
         await currentBook.createBookmark(pageNumber)
         await currentBook.refresh()
-        ctx.telegram.sendMessage(ctx.message.chat.id, `Bookmarking page ${pageNumber} of ${currentBook.title}.${currentBook.progress ? `\nYou are at ${currentBook.progress}%` : ''}`)
+        ctx.telegram.sendMessage(ctx.message.chat.id, generateConfirmMessage(currentBook, pageNumber), {
+          parse_mode: 'MarkdownV2'
+        })
       } else {
         ctx.telegram.sendMessage(ctx.message.chat.id, 'You currently have no books in progress. Log into notion.so and mark a book as \'In Progress\'.')
       }
@@ -41,3 +43,11 @@ if (process.env.WEBHOOK_HOST && process.env.PORT) {
 
 process.once('SIGINT', () => bot.stop('SIGINT'))
 process.once('SIGTERM', () => bot.stop('SIGTERM'))
+
+function generateConfirmMessage (currentBook: Book, pageNumber: number) {
+  let message = `Bookmarking page ${pageNumber} of _${currentBook.title}_\\.`
+  if (currentBook.progress) {
+    message += `\nYou are at *${currentBook.progress}%* of ${currentBook.totalPages} pages.`
+  }
+  return message
+}
