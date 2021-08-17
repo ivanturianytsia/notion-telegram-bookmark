@@ -47,7 +47,7 @@ process.once('SIGTERM', () => bot.stop('SIGTERM'))
 function generateConfirmMessage (currentBook: Book, pageNumber: number) {
   let message = `Bookmarking page ${pageNumber} of _${currentBook.title}_\\.`
   if (currentBook.progress) {
-    message += `\nYou are at *${currentBook.progress}%* of ${currentBook.totalPages} pages.`
+    message += `\nYou are at *${currentBook.progress}%* of ${currentBook.totalPages} pages\\.`
   }
   return message
 }
