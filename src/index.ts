@@ -15,7 +15,7 @@ bot.on('text', async ctx => {
       if (currentBook) {
         await currentBook.createBookmark(pageNumber)
         await currentBook.refresh()
-        ctx.telegram.sendMessage(ctx.message.chat.id, generateConfirmMessage(currentBook, pageNumber), {
+        ctx.telegram.sendMessage(ctx.message.chat.id, await generateConfirmMessage(currentBook, pageNumber), {
           parse_mode: 'MarkdownV2'
         })
       } else {
@@ -44,10 +44,9 @@ if (process.env.WEBHOOK_HOST && process.env.PORT) {
 process.once('SIGINT', () => bot.stop('SIGINT'))
 process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
-function generateConfirmMessage (currentBook: Book, pageNumber: number) {
+async function generateConfirmMessage (currentBook: Book, pageNumber: number) {
   let message = `Bookmarking page ${pageNumber} of _${currentBook.title}_\\.`
-  if (currentBook.progress) {
-    message += `\nYou are at *${currentBook.progress}%* of ${currentBook.totalPages} pages\\.`
-  }
+  const progress = await currentBook.getProgress()
+  message += `\nYou are at *${progress}%* of ${currentBook.totalPages} pages\\.`
   return message
 }

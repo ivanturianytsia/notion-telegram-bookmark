@@ -28,12 +28,24 @@ class NotionBooksClient extends Client {
       },
     })
   }
+
+  async getProgress(bookId: string) {
+    return this.databases.query({
+      database_id: READING_SESSIONS_DATABASE_ID,
+      filter: {
+        property: 'Book',
+        relation: {
+          contains: bookId,
+        },
+      }
+    })
+  }
       
   static getPlainText(richText: RichText[]) {
     return richText.map(clause => clause.plain_text).join()
   }
 
-  public async createBookmark(book: Book, pageNumber: number) {
+  public async createBookmark(bookId: string, pageNumber: number) {
     return this.pages.create({
       parent: {
         database_id: READING_SESSIONS_DATABASE_ID,
@@ -63,11 +75,11 @@ class NotionBooksClient extends Client {
         'Book': {
           type: 'relation',
           relation: [{
-            id: book.id,
+            id: bookId,
           }],
         } as any,
       },
-    });
+    })
   }
 
   public async getBookbyId(bookId: string) {
@@ -88,7 +100,7 @@ class NotionBooksClient extends Client {
 export class Book {
   constructor(private book: Page) {}
 
-  get id () {
+  get id() {
     return this.book.id
   }
 
@@ -105,19 +117,29 @@ export class Book {
       : 0
   }
 
-  get progress() {
-    const { 'Completed %': Completed } = this.book.properties
-    return Completed.type === 'rollup' && Completed.rollup.type === 'number'
-      ? Completed.rollup.number
-      : 0
+  // Uncomment when rollup works properly again
+  //
+  // get progress() {
+  //   const { 'Completed %': Completed } = this.book.properties
+  //   return Completed.type === 'rollup' && Completed.rollup.type === 'number'
+  //     ? Completed.rollup.number
+  //     : 0
+  // }
+
+  public async getProgress() {
+    const { results } = await NotionBooksClient.client.getProgress(this.id)
+
+    return Math.max(...results.map(({ properties: { '%': percent } }) => {
+      return (percent.type === 'formula' && percent.formula.type === 'number' && percent.formula.number) || 0
+    }))
   }
 
   public createBookmark(pageNumber: number) {
-    return NotionBooksClient.client.createBookmark(this, pageNumber)
+    return NotionBooksClient.client.createBookmark(this.id, pageNumber)
   }
 
   public async refresh() {
-    this.book = await NotionBooksClient.client.getBookbyId(this.book.id)
+    this.book = await NotionBooksClient.client.getBookbyId(this.id)
   }
 
   static async getCurrentBook(): Promise<Book | null> {
