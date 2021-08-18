@@ -126,12 +126,10 @@ export class Book {
   //     : 0
   // }
 
-  public async getProgress() {
-    const { results } = await NotionBooksClient.client.getProgress(this.id)
+  public async getPercentCompleted() {
+    const readingSessions = await this.getProgress()
 
-    return Math.max(...results.map(({ properties: { '%': percent } }) => {
-      return (percent.type === 'formula' && percent.formula.type === 'number' && percent.formula.number) || 0
-    }))
+    return Math.max(...readingSessions.map(({ percentCompleted }) => percentCompleted))
   }
 
   public createBookmark(pageNumber: number) {
@@ -150,5 +148,35 @@ export class Book {
     }
 
     return new Book(currentBooks.results[0])
+  }
+
+  public async getProgress() {
+    const { results } = await NotionBooksClient.client.getProgress(this.id)
+
+    return results
+      .map(result => new ReadingSession(result))
+      .filter(({ date }) => {
+        return date !== ''
+      })
+  }
+}
+
+export class ReadingSession {
+  public percentCompleted
+  public date
+  public endPage
+
+  constructor (session: Page) {
+    const {
+      properties: {
+        '%': percent,
+        Date: date,
+        'End Page': endPage
+      }
+    } = session
+
+    this.percentCompleted = (percent.type === 'formula' && percent.formula.type === 'number' && percent.formula.number) || 0,
+    this.date = (date.type === 'date' && date.date.start) || '',
+    this.endPage = (endPage.type === 'number' && endPage.number) || 0
   }
 }
