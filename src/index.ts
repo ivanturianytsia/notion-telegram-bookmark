@@ -23,7 +23,7 @@ bot.on('text', async ctx => {
       } else {
         ctx.telegram.sendMessage(ctx.message.chat.id, replyNoCurrentBook())
       }
-    } if (ctx.message.text.toLowerCase() === 'progress') {
+    } else if (ctx.message.text.toLowerCase() === 'progress') {
       const book = await Book.getCurrentBook()
       if (book) {
         const progress = await book!.getProgress()
