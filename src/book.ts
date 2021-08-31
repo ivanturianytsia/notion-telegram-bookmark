@@ -106,13 +106,13 @@ export class Book {
 
   get title() {
     const { Name } = this.book.properties
-    return Name.type === 'title'
+    return Name?.type === 'title'
       ? `${NotionBooksClient.getPlainText(Name.title)}`
       : 'the current book'
   }
 
   get totalPages() {
-    return this.book.properties.Pages.type === 'number'
+    return this.book.properties.Pages?.type === 'number'
       ? this.book.properties.Pages.number
       : 0
   }
