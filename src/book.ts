@@ -37,12 +37,12 @@ class NotionBooksClient extends Client {
         relation: {
           contains: bookId,
         },
-      }
+      },
     })
   }
-      
+
   static getPlainText(richText: RichText[]) {
-    return richText.map(clause => clause.plain_text).join()
+    return richText.map((clause) => clause.plain_text).join()
   }
 
   public async createBookmark(bookId: string, pageNumber: number) {
@@ -58,25 +58,27 @@ class NotionBooksClient extends Client {
               type: 'text',
               text: {
                 content: '',
-              }
+              },
             },
           ],
         },
-        'Date': {
+        Date: {
           type: 'date',
           date: {
-            start: (new Date()).toISOString()
-          }
+            start: new Date().toISOString(),
+          },
         },
         'End Page': {
           type: 'number',
           number: pageNumber,
         },
-        'Book': {
+        Book: {
           type: 'relation',
-          relation: [{
-            id: bookId,
-          }],
+          relation: [
+            {
+              id: bookId,
+            },
+          ],
         } as any,
       },
     })
@@ -129,7 +131,9 @@ export class Book {
   public async getPercentCompleted() {
     const readingSessions = await this.getProgress()
 
-    return Math.max(...readingSessions.map(({ percentCompleted }) => percentCompleted))
+    return Math.max(
+      ...readingSessions.map(({ percentCompleted }) => percentCompleted)
+    )
   }
 
   public createBookmark(pageNumber: number) {
@@ -154,7 +158,7 @@ export class Book {
     const { results } = await NotionBooksClient.client.getProgress(this.id)
 
     return results
-      .map(result => new ReadingSession(result))
+      .map((result) => new ReadingSession(result))
       .filter(({ date }) => {
         return date !== ''
       })
@@ -166,17 +170,17 @@ export class ReadingSession {
   public date
   public endPage
 
-  constructor (session: Page) {
+  constructor(session: Page) {
     const {
-      properties: {
-        '%': percent,
-        Date: date,
-        'End Page': endPage
-      }
+      properties: { '%': percent, Date: date, 'End Page': endPage },
     } = session
 
-    this.percentCompleted = (percent.type === 'formula' && percent.formula.type === 'number' && percent.formula.number) || 0,
-    this.date = (date.type === 'date' && date.date.start) || '',
-    this.endPage = (endPage.type === 'number' && endPage.number) || 0
+    ;(this.percentCompleted =
+      (percent.type === 'formula' &&
+        percent.formula.type === 'number' &&
+        percent.formula.number) ||
+      0),
+      (this.date = (date.type === 'date' && date.date.start) || ''),
+      (this.endPage = (endPage.type === 'number' && endPage.number) || 0)
   }
 }
