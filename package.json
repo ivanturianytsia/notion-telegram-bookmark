@@ -27,6 +27,7 @@
     "@types/node": "^16.4.10",
     "chartjs-adapter-moment": "^1.0.1",
     "chartjs-node-canvas": "^4.1.6",
+    "dotenv": "^16.0.3",
     "moment": "^2.29.1",
     "pm2": "^5.2.2",
     "telegraf": "^4.4.1",
