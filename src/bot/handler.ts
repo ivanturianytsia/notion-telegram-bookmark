@@ -3,6 +3,8 @@ import { Book } from './notion'
 import { drawProgressChart } from './chart'
 import { Context, TelegramResponse } from '.'
 
+const PROGRESS_ENABLED = false
+
 export const handleText = async ({
   chatId,
   messageText,
@@ -18,17 +20,15 @@ export const handleText = async ({
           return { text: message }
         }
         await currentBook.createBookmark(pageNumber)
-        await currentBook.refresh()
+        currentBook = (await Book.getCurrentBook())!
 
         return {
           text: await generateConfirmMessage(currentBook, pageNumber),
         }
       }
 
-      return {
-        text: replyNoCurrentBook(),
-      }
-    } else if (messageText.toLowerCase() === 'progress') {
+      return replyNoCurrentBook()
+    } else if (PROGRESS_ENABLED && messageText.toLowerCase() === 'progress') {
       const book = await Book.getCurrentBook()
       if (book) {
         const progress = await book!.getProgress()
@@ -39,13 +39,23 @@ export const handleText = async ({
         }
       }
 
-      return {
-        text: replyNoCurrentBook(),
+      return replyNoCurrentBook()
+    } else if (messageText.length > 5) {
+      let currentBook = await Book.getCurrentBook()
+
+      if (currentBook) {
+        await currentBook.appendQuote(messageText)
+
+        return {
+          text: 'Quote saved\\.',
+        }
       }
+
+      return replyNoCurrentBook()
     }
 
     return {
-      text: 'Please specify a page number.',
+      text: 'Please specify a page number or send a quote\\.',
     }
   } catch (err) {
     console.error(err)
@@ -60,5 +70,7 @@ async function generateConfirmMessage(currentBook: Book, pageNumber: number) {
 }
 
 function replyNoCurrentBook() {
-  return "You currently have no books in progress. Log into notion.so and mark a book as 'In Progress'."
+  return {
+    text: "You currently have no books in progress. Log into notion.so and mark a book as 'In Progress'.",
+  }
 }

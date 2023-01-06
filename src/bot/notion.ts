@@ -1,52 +1,46 @@
 import { Client } from '@notionhq/client'
-import { Page, RichText } from '@notionhq/client/build/src/api-types'
+import { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 
 const BOOK_DATABASE_ID = 'c50dd28e9a3a420b991261359efc205d'
 const READING_SESSIONS_DATABASE_ID = '9339fc34a20d401881f43a33570936f5'
 
-class NotionBooksClient extends Client {
-  private static _instance: NotionBooksClient
+class NotionClient {
+  private static _instance: Client
 
   private constructor() {
     if (!process.env.NOTION_TOKEN) {
       throw new Error('NOTION_TOKEN not set')
     }
-
-    super({
-      auth: process.env.NOTION_TOKEN,
-    })
   }
 
-  async getCurrentBooks() {
-    return this.databases.query({
-      database_id: BOOK_DATABASE_ID,
-      filter: {
-        property: 'Status',
-        select: {
-          equals: 'In Progress',
-        },
-      },
-    })
+  static get client() {
+    if (!NotionClient._instance) {
+      NotionClient._instance = new Client({
+        auth: process.env.NOTION_TOKEN,
+      })
+    }
+
+    return NotionClient._instance
+  }
+}
+
+export class Book {
+  constructor(
+    public id: string,
+    public title: string,
+    public totalPages: number
+  ) {}
+
+  public async getPercentCompleted() {
+    const readingSessions = await this.getProgress()
+
+    return Math.max(
+      ...readingSessions.map(({ percentCompleted }) => percentCompleted)
+    )
   }
 
-  async getProgress(bookId: string) {
-    return this.databases.query({
-      database_id: READING_SESSIONS_DATABASE_ID,
-      filter: {
-        property: 'Book',
-        relation: {
-          contains: bookId,
-        },
-      },
-    })
-  }
-
-  static getPlainText(richText: RichText[]) {
-    return richText.map((clause) => clause.plain_text).join()
-  }
-
-  public async createBookmark(bookId: string, pageNumber: number) {
-    return this.pages.create({
+  public createBookmark(pageNumber: number) {
+    return NotionClient.client.pages.create({
       parent: {
         database_id: READING_SESSIONS_DATABASE_ID,
       },
@@ -76,111 +70,135 @@ class NotionBooksClient extends Client {
           type: 'relation',
           relation: [
             {
-              id: bookId,
+              id: this.id,
             },
           ],
-        } as any,
+        },
       },
     })
   }
 
-  public async getBookbyId(bookId: string) {
-    return this.pages.retrieve({
-      page_id: bookId,
+  public async getProgress() {
+    const sessions = await ReadingSession.getReadingSessionsForBook(this.id)
+    return sessions.filter(({ date }) => {
+      return date !== ''
     })
   }
 
-  static get client() {
-    if (!NotionBooksClient._instance) {
-      NotionBooksClient._instance = new NotionBooksClient()
-    }
-
-    return NotionBooksClient._instance
-  }
-}
-
-export class Book {
-  constructor(private book: Page) {}
-
-  get id() {
-    return this.book.id
-  }
-
-  get title() {
-    const { Name } = this.book.properties
-    return Name?.type === 'title'
-      ? `${NotionBooksClient.getPlainText(Name.title)}`
-      : 'the current book'
-  }
-
-  get totalPages() {
-    return this.book.properties.Pages?.type === 'number'
-      ? this.book.properties.Pages.number
-      : 0
-  }
-
-  // Uncomment when rollup works properly again
-  //
-  // get progress() {
-  //   const { 'Completed %': Completed } = this.book.properties
-  //   return Completed.type === 'rollup' && Completed.rollup.type === 'number'
-  //     ? Completed.rollup.number
-  //     : 0
-  // }
-
-  public async getPercentCompleted() {
-    const readingSessions = await this.getProgress()
-
-    return Math.max(
-      ...readingSessions.map(({ percentCompleted }) => percentCompleted)
-    )
-  }
-
-  public createBookmark(pageNumber: number) {
-    return NotionBooksClient.client.createBookmark(this.id, pageNumber)
-  }
-
-  public async refresh() {
-    this.book = await NotionBooksClient.client.getBookbyId(this.id)
+  public async appendQuote(text: string) {
+    await NotionClient.client.blocks.children.append({
+      block_id: this.id,
+      children: [
+        {
+          object: 'block',
+          type: 'bulleted_list_item',
+          bulleted_list_item: {
+            rich_text: [
+              {
+                type: 'text',
+                text: { content: text },
+              },
+            ],
+          },
+        },
+      ],
+    })
   }
 
   static async getCurrentBook(): Promise<Book | null> {
-    const currentBooks = await NotionBooksClient.client.getCurrentBooks()
+    const currentBooks = await Book.getCurrentBooks()
 
     if (currentBooks.results.length === 0) {
       return null
     }
 
-    return new Book(currentBooks.results[0])
+    const currentBook = currentBooks.results[0]
+
+    if (!('properties' in currentBook)) {
+      return null
+    }
+
+    return Book.fromNotion(currentBook)
   }
 
-  public async getProgress() {
-    const { results } = await NotionBooksClient.client.getProgress(this.id)
+  static async getCurrentBooks() {
+    return NotionClient.client.databases.query({
+      database_id: BOOK_DATABASE_ID,
+      filter: {
+        property: 'Status',
+        select: {
+          equals: 'In Progress',
+        },
+      },
+    })
+  }
 
-    return results
-      .map((result) => new ReadingSession(result))
-      .filter(({ date }) => {
-        return date !== ''
-      })
+  static async getBookbyId(bookId: string) {
+    return NotionClient.client.pages.retrieve({
+      page_id: bookId,
+    })
+  }
+
+  static fromNotion(book: PageObjectResponse) {
+    const { Name } = book.properties
+    const title =
+      Name?.type === 'title'
+        ? `${Name.title.map((clause) => clause.plain_text).join()}`
+        : 'the current book'
+
+    const totalPages =
+      book.properties.Pages?.type === 'number'
+        ? book.properties.Pages.number || 0
+        : 0
+
+    return new Book(book.id, title, totalPages)
   }
 }
 
 export class ReadingSession {
-  public percentCompleted
-  public date
-  public endPage
+  constructor(
+    public percentCompleted: number,
+    public date: string,
+    public endPage: number
+  ) {}
 
-  constructor(session: Page) {
+  static async getReadingSessionsForBook(bookId: string) {
+    const { results } = await NotionClient.client.databases.query({
+      database_id: READING_SESSIONS_DATABASE_ID,
+      filter: {
+        property: 'Book',
+        relation: {
+          contains: bookId,
+        },
+      },
+    })
+
+    return results
+      .map((result) => {
+        if ('properties' in result) {
+          return ReadingSession.fromNotion(result)
+        }
+
+        return null
+      })
+      .filter(Boolean) as ReadingSession[]
+  }
+
+  static fromNotion(session: PageObjectResponse) {
     const {
-      properties: { '%': percent, Date: date, 'End Page': endPage },
-    } = session
+      '%': percentProp,
+      Date: dateProp,
+      'End Page': endPageProp,
+    } = session.properties
 
-    ;(this.percentCompleted =
-      (percent.type === 'formula' &&
-        percent.formula.type === 'number' &&
-        percent.formula.number) ||
-      0),
-      (this.date = (date.type === 'date' && date.date.start) || ''),
-      (this.endPage = (endPage.type === 'number' && endPage.number) || 0)
+    const percent =
+      (percentProp.type === 'formula' &&
+        percentProp.formula.type === 'number' &&
+        percentProp.formula.number) ||
+      0
+    const date = (dateProp.type === 'date' && dateProp.date!.start) || ''
+    const endPage = (endPageProp.type === 'number' && endPageProp.number) || 0
+
+    return new ReadingSession(percent, date, endPage)
   }
 }
