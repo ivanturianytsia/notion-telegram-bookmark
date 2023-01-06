@@ -1,6 +1,6 @@
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas'
 import 'chartjs-adapter-moment'
-import { ReadingSession } from './book'
+import { ReadingSession } from './notion'
 
 export async function drawProgressChart(sessions: ReadingSession[]) {
   const chartJSNodeCanvas = new ChartJSNodeCanvas({ width: 1000, height: 600 })
