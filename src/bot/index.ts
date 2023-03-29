@@ -1,7 +1,7 @@
 import { Telegraf } from 'telegraf'
 import { handleText } from './handler'
 
-export const launchBot = () => {
+export const launchBot = async () => {
   if (!process.env.BOT_TOKEN) {
     throw new Error('BOT_TOKEN is not set.')
   }
@@ -26,12 +26,25 @@ export const launchBot = () => {
     }
   })
 
-  bot.launch()
-
   process.once('SIGINT', () => bot.stop('SIGINT'))
   process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
-  console.log('Bot is ready!')
+  if (process.env.DOMAIN) {
+    const port = !isNaN(parseInt(process.env.WEBHOOK_PORT!))
+      ? parseInt(process.env.WEBHOOK_PORT!)
+      : 3001
+    await bot.launch({
+      webhook: {
+        domain: process.env.DOMAIN,
+        port,
+        hookPath: '/bot/webhook',
+      },
+    })
+    console.log(`Bot is ready! (listening on port ${port})`)
+  } else {
+    await bot.launch()
+    console.log('Bot is ready! (polling mode)')
+  }
 }
 
 export interface TelegramResponse {
