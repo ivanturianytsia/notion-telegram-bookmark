@@ -1,7 +1,8 @@
+import { Handler } from 'express'
 import { Telegraf } from 'telegraf'
 import { handleText } from './handler'
 
-export const launchBot = async () => {
+export const createBot = () => {
   if (!process.env.BOT_TOKEN) {
     throw new Error('BOT_TOKEN is not set.')
   }
@@ -29,23 +30,27 @@ export const launchBot = async () => {
   process.once('SIGINT', () => bot.stop('SIGINT'))
   process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
-  if (process.env.DOMAIN) {
-    const port = !isNaN(parseInt(process.env.WEBHOOK_PORT!))
-      ? parseInt(process.env.WEBHOOK_PORT!)
-      : 3001
-    await bot.launch({
-      webhook: {
-        domain: process.env.DOMAIN,
-        port,
-        hookPath: '/bot/webhook',
-      },
-    })
-    console.log(`Bot is ready! (listening on port ${port})`)
-  } else {
-    await bot.launch()
-    console.log('Bot is ready! (polling mode)')
+  return {
+    launch: () => {
+      bot.launch()
+      console.log('Bot is ready! (polling mode)')
+    },
+    handleWebhook: (webhookPath: string): Handler => {
+      if (!process.env.DOMAIN) {
+        throw new Error('DOMAIN is not set.')
+      }
+      const port = !isNaN(parseInt(process.env.WEBHOOK_PORT!))
+        ? parseInt(process.env.WEBHOOK_PORT!)
+        : 3001
+
+      console.log(`Bot is starting! (webhook mode)`)
+      bot.telegram.setWebhook(`https://${process.env.DOMAIN}/bot/webhook`)
+      return bot.webhookCallback(webhookPath)
+    },
   }
 }
+
+export type Bot = ReturnType<typeof createBot>
 
 export interface TelegramResponse {
   text?: string
