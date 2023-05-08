@@ -50,7 +50,9 @@ export class Bot {
       : 3001
 
     console.log(`Bot ${this.id} is starting! (webhook mode)`)
-    this.bot.telegram.setWebhook(`https://${process.env.DOMAIN}/bot/webhook`)
+    this.bot.telegram.setWebhook(
+      `https://${process.env.DOMAIN}/bot/webhook/${this.id}`
+    )
     return this.bot.webhookCallback(webhookPath)
   }
 }
