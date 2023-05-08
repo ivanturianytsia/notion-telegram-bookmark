@@ -1,14 +1,16 @@
 import { config } from 'dotenv'
-import { createBot } from './bot'
+import { createBots } from './bots'
 import { launchServer } from './server'
 
 config()
 
-const bot = createBot()
+const bots = createBots()
 
 if (process.env.DOMAIN) {
-  launchServer(bot)
+  launchServer(bots)
 } else {
-  bot.launch()
+  bots.forEach((bot) => {
+    bot.launch()
+  })
   launchServer()
 }

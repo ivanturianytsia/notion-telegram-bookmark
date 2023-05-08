@@ -1,14 +1,15 @@
-import express, { Handler } from 'express'
-import { Telegraf } from 'telegraf'
-import { Bot } from '../bot'
+import express from 'express'
+import { Bot } from '../bots/bot'
 
-export const launchServer = (bot?: Bot) => {
+export const launchServer = (bots?: Bot[]) => {
   const port = process.env.PORT || 3000
 
   const app = express()
 
-  if (bot) {
-    app.use(bot.handleWebhook('/bot/webhook'))
+  if (bots) {
+    bots.forEach((bot) => {
+      app.use(bot.handleWebhook(`/bot/webhook/${bot.id}`))
+    })
   }
 
   app.get('/', (req, res) => {

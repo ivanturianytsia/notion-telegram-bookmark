@@ -1,14 +1,13 @@
-import { Telegraf } from 'telegraf'
 import { Book } from './notion'
 import { drawProgressChart } from './chart'
-import { Context, TelegramResponse } from '.'
+import { TextHandler } from '../bot'
 
 const PROGRESS_ENABLED = false
 
-export const handleText = async ({
+export const notionBookmarkBotHandler: TextHandler = async ({
   chatId,
   messageText,
-}: Context): Promise<TelegramResponse | undefined> => {
+}) => {
   try {
     console.log('Incoming message:', messageText)
     const pageNumber = parseInt(messageText)
@@ -17,13 +16,13 @@ export const handleText = async ({
       if (currentBook) {
         if (!currentBook.totalPages) {
           const message = `Your current book _${currentBook.title}_ has no total pages number set\\. Log into notion\\.so and set Pages property for the book\\.`
-          return { text: message }
+          return { formattedText: message }
         }
         await currentBook.createBookmark(pageNumber)
         currentBook = (await Book.getCurrentBook())!
 
         return {
-          text: await generateConfirmMessage(currentBook, pageNumber),
+          formattedText: await generateConfirmMessage(currentBook, pageNumber),
         }
       }
 
@@ -47,7 +46,7 @@ export const handleText = async ({
         await currentBook.appendQuote(messageText)
 
         return {
-          text: 'Quote saved\\.',
+          formattedText: 'Quote saved\\.',
         }
       }
 
@@ -55,7 +54,7 @@ export const handleText = async ({
     }
 
     return {
-      text: 'Please specify a page number or send a quote\\.',
+      formattedText: 'Please specify a page number or send a quote\\.',
     }
   } catch (err) {
     console.error(err)
@@ -71,6 +70,7 @@ async function generateConfirmMessage(currentBook: Book, pageNumber: number) {
 
 function replyNoCurrentBook() {
   return {
-    text: "You currently have no books in progress. Log into notion.so and mark a book as 'In Progress'.",
+    formattedText:
+      "You currently have no books in progress. Log into notion.so and mark a book as 'In Progress'.",
   }
 }
