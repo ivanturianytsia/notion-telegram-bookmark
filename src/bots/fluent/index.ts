@@ -38,14 +38,15 @@ async function getCompletion(prompt: string) {
     messages: [
       {
         role: 'system',
-        content: "Rephrase the user's message to make it sound more fluent.",
+        content:
+          "Your task is to fix the grammar and spelling mistakes, as well as, rephrase the user's message to make it sound more fluent, if possible. Don't use any quotation marks.",
       },
       {
         role: 'user',
         content: prompt,
       },
     ],
-    temperature: 1,
+    temperature: 0,
   })
 
   return result.data.choices[0].message?.content!
