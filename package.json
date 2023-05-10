@@ -8,6 +8,8 @@
     "start": "npm run build && node ./dist/index.js",
     "build": "tsc",
     "start:prod": "pm2 start ./dist/index.js",
+    "stop:prod": "pm2 stop 0 && pm2 delete all",
+    "deploy": "npm run stop:prod && npm run build && npm run start:prod",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
