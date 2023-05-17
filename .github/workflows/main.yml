@@ -21,4 +21,4 @@ jobs:
 
       - name: Deploy to Remote Server
         run: |
-          ssh root@$DROPLET_IP 'cd notion-telegram-bookmark && git pull && npm run deploy'
+          ssh root@$DROPLET_IP 'source ~/.nvm/nvm.sh && cd notion-telegram-bookmark && git pull && npm run deploy'
