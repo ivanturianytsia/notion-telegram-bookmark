@@ -1,6 +1,9 @@
 name: Deploy to DigitalOcean
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - 'main'
 jobs:
   SSH-into-droplet:
     runs-on: ubuntu-latest
