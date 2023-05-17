@@ -18,7 +18,12 @@ jobs:
           echo "$PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $DROPLET_IP >> ~/.ssh/known_hosts
-
+      - uses: actions/checkout@v2
+      - run: TAG=notion-telegram-bookmark:$(date +%s)
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag $TAG
+      - name: Copy the Docker image
+        run: docker save $TAG | bzip2 | ssh bookmark-droplet docker load
       - name: Deploy to Remote Server
         run: |
-          ssh root@$DROPLET_IP 'source ~/.nvm/nvm.sh && cd notion-telegram-bookmark && git pull && npm run deploy'
+          ssh root@$DROPLET_IP 'cd notion-telegram-bookmark && docker run -p 3000:3000 --env-file .env $TAG'
