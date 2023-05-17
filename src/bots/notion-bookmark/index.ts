@@ -56,9 +56,11 @@ export const notionBookmarkBotHandler: TextHandler = async ({
 async function replyBookmarked(pageNumber: number): Promise<TelegramResponse> {
   const currentBook = (await Book.getCurrentBook())! // We reload the book to get the latest data
   const percentCompleted = await currentBook.getPercentCompleted()
+  const daysToFinish = await currentBook.getDaysToFinish()
 
-  let message = `Bookmarking page ${pageNumber} of _${currentBook.title}_\\.`
-  message += `\nYou are at *${percentCompleted}%* of ${currentBook.totalPages} pages\\.`
+  let message = `Marking page ${pageNumber} of _${currentBook.title}_\\.`
+  message += `\nNow at *${percentCompleted}%* of ${currentBook.totalPages} pages\\.`
+  message += `\n\\~${daysToFinish} days to go\\.`
 
   return {
     formattedText: message,
