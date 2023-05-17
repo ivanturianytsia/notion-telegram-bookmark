@@ -1,5 +1,4 @@
 import { Book } from './notion'
-import { drawProgressChart } from './chart'
 import { TextHandler, TelegramResponse } from '../bot'
 
 const PROGRESS_ENABLED = false
@@ -20,18 +19,6 @@ export const notionBookmarkBotHandler: TextHandler = async ({
         await currentBook.createBookmark(pageNumber)
 
         return replyBookmarked(pageNumber)
-      }
-
-      return replyNoCurrentBook()
-    } else if (PROGRESS_ENABLED && messageText.toLowerCase() === 'progress') {
-      const book = await Book.getCurrentBook()
-      if (book) {
-        const progress = await book!.getProgress()
-        const image = await drawProgressChart(progress)
-
-        return {
-          img: image,
-        }
       }
 
       return replyNoCurrentBook()
