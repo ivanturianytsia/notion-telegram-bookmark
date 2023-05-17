@@ -8,7 +8,7 @@ jobs:
   SSH-into-droplet:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Deploying to DigitalOcean..."
+      - run: echo "Deploying to DigitalOcean at $BOOKMARK_DROPLET_IP..."
       - name: Configure SSH Key
         run: |
           mkdir -p ~/.ssh
