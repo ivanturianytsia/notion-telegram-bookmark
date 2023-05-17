@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PRIVATE_KEY: ${{ secrets.BOOKMARK_DROPLET_PRIVATE_KEY }}
-      DROPLET_IP: ${{ env.BOOKMARK_DROPLET_IP }}
+      DROPLET_IP: ${{ vars.BOOKMARK_DROPLET_IP }}
     steps:
       - run: echo "Deploying to DigitalOcean..."
       - name: Configure SSH Key
