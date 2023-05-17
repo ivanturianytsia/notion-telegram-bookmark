@@ -6,7 +6,7 @@
   "scripts": {
     "postinstall": "npm run build",
     "start": "npm run build && node ./dist/index.js",
-    "build": "tsc",
+    "build": "npm install && tsc",
     "start:prod": "pm2 start ./dist/index.js",
     "stop:prod": "pm2 stop 0 && pm2 delete all",
     "deploy": "npm run build && npm run stop:prod && npm run start:prod",
