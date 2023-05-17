@@ -10,6 +10,7 @@ jobs:
     env:
       PRIVATE_KEY: ${{ secrets.BOOKMARK_DROPLET_PRIVATE_KEY }}
       DROPLET_IP: ${{ vars.BOOKMARK_DROPLET_IP }}
+      TAG: notion-telegram-bookmark:$(date +%s)
     steps:
       - run: echo "Deploying to DigitalOcean..."
       - name: Configure SSH Key
@@ -19,7 +20,6 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $DROPLET_IP >> ~/.ssh/known_hosts
       - uses: actions/checkout@v2
-      - run: TAG=notion-telegram-bookmark:$(date +%s)
       - name: Build the Docker image
         run: docker build . --file Dockerfile --tag $TAG
       - name: Copy the Docker image
