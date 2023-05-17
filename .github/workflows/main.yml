@@ -7,15 +7,18 @@ on:
 jobs:
   SSH-into-droplet:
     runs-on: ubuntu-latest
+    env:
+      PRIVATE_KEY: ${{ secrets.BOOKMARK_DROPLET_PRIVATE_KEY }}
+      DROPLET_IP: ${{ env.BOOKMARK_DROPLET_IP }}
     steps:
-      - run: echo "Deploying to DigitalOcean at $BOOKMARK_DROPLET_IP..."
+      - run: echo "Deploying to DigitalOcean..."
       - name: Configure SSH Key
         run: |
           mkdir -p ~/.ssh
-          echo "$BOOKMARK_DROPLET_PRIVATE_KEY" > ~/.ssh/id_rsa
+          echo "$PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H $BOOKMARK_DROPLET_IP >> ~/.ssh/known_hosts
+          ssh-keyscan -H $DROPLET_IP >> ~/.ssh/known_hosts
 
       - name: Deploy to Remote Server
         run: |
-          ssh root@$BOOKMARK_DROPLET_IP 'cd notion-telegram-bookmark && git pull && npm run deploy'
+          ssh root@$DROPLET_IP 'cd notion-telegram-bookmark && git pull && npm run deploy'
