@@ -1,0 +1,18 @@
+name: Deploy to DigitalOcean
+on:
+  workflow_dispatch:
+jobs:
+  SSH-into-droplet:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Deploying to DigitalOcean..."
+      - name: Configure SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H your_remote_server_ip >> ~/.ssh/known_hosts
+
+      - name: Deploy to Remote Server
+        run: |
+          ssh root@$DROPLET 'cd notion-telegram-bookmark && git pull && npm run deploy'
