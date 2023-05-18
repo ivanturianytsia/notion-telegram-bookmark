@@ -10,9 +10,11 @@ jobs:
     env:
       PRIVATE_KEY: ${{ secrets.BOOKMARK_DROPLET_PRIVATE_KEY }}
       DROPLET_IP: ${{ vars.BOOKMARK_DROPLET_IP }}
-      TAG: notion-telegram-bookmark:$(date +%s)
     steps:
       - run: echo "Deploying to DigitalOcean..."
+      - name: Generate tag
+        id: tag
+        run: echo "::set-output name=tag::notion-telegram-bookmark:$(date +%s)"
       - name: Configure SSH Key
         run: |
           mkdir -p ~/.ssh
@@ -21,9 +23,9 @@ jobs:
           ssh-keyscan -H $DROPLET_IP >> ~/.ssh/known_hosts
       - uses: actions/checkout@v2
       - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag $TAG
+        run: docker build . --file Dockerfile --tag ${{ steps.tag.outputs.tag }}
       - name: Copy the Docker image
-        run: docker save $TAG | bzip2 | ssh bookmark-droplet docker load
+        run: docker save ${{ steps.tag.outputs.tag }} | bzip2 | ssh root@$DROPLET_IP docker load
       - name: Deploy to Remote Server
         run: |
-          ssh root@$DROPLET_IP 'cd notion-telegram-bookmark && docker run -p 3000:3000 --env-file .env $TAG'
+          ssh root@$DROPLET_IP 'cd notion-telegram-bookmark && docker run -p 3000:3000 --env-file .env ${{ steps.tag.outputs.tag }}'
