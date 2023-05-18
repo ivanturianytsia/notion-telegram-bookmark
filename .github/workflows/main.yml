@@ -24,11 +24,14 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build the Docker image
         run: docker build . --file Dockerfile --tag ${{ steps.tag.outputs.tag }}
-      - name: Copy the Docker image
-        run: docker save ${{ steps.tag.outputs.tag }} | bzip2 | ssh root@$DROPLET_IP docker load
       - name: Remove old containers
         run: |
-          ssh root@$DROPLET_IP 'docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)'
+          ssh root@$DROPLET_IP 'docker stop $(docker ps -a -q); docker rm $(docker ps -a -q) || true'
+      - name: Remove old images
+        run: |
+          ssh root@$DROPLET_IP 'docker rmi $(docker images -q) || true'
+      - name: Copy the Docker image
+        run: docker save ${{ steps.tag.outputs.tag }} | bzip2 | ssh root@$DROPLET_IP docker load
       - name: Deploy to Remote Server
         run: |
           ssh root@$DROPLET_IP 'docker run -p 3000:3000 --name notion-telegram-bookmark --env-file .env -d ${{ steps.tag.outputs.tag }}'
