@@ -13,7 +13,7 @@ export const launchServer = (bots?: Bot[]) => {
   }
 
   app.get('/', (req, res) => {
-    res.send('The bot is working.')
+    res.send('The bot is working!')
   })
 
   app.listen(port, () => {
