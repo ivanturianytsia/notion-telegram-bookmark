@@ -28,4 +28,4 @@ jobs:
         run: docker save ${{ steps.tag.outputs.tag }} | bzip2 | ssh root@$DROPLET_IP docker load
       - name: Deploy to Remote Server
         run: |
-          ssh root@$DROPLET_IP 'cd notion-telegram-bookmark && docker run -p 3000:3000 --name notion-telegram-bookmark --env-file .env ${{ steps.tag.outputs.tag }}'
+          ssh root@$DROPLET_IP 'cd notion-telegram-bookmark && docker run -p 3000:3000 --name notion-telegram-bookmark --env-file .env -d ${{ steps.tag.outputs.tag }}'
