@@ -12,23 +12,27 @@ export class Bot {
     this.bot = new Telegraf(botToken)
 
     this.bot.on('text', async (ctx) => {
+      console.log(new Date(), 'Incoming message:', ctx.message.text)
       const response = await handleText({
         chatId: ctx.message.chat.id,
         messageText: ctx.message.text,
       })
 
-      if (response && response.text) {
+      if (response?.text) {
         ctx.telegram.sendMessage(ctx.message.chat.id, response.text)
+        console.log(new Date(), 'Response:', response.text)
       }
-      if (response && response.formattedText) {
+      if (response?.formattedText) {
         ctx.telegram.sendMessage(ctx.message.chat.id, response.formattedText, {
           parse_mode: 'MarkdownV2',
         })
+        console.log(new Date(), 'Response (formatted):', response.formattedText)
       }
-      if (response && response.img) {
+      if (response?.img) {
         ctx.telegram.sendPhoto(ctx.message.chat.id, {
           source: response.img,
         })
+        console.log(new Date(), 'Responded with image.')
       }
     })
 

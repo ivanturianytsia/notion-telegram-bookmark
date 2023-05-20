@@ -8,36 +8,48 @@ export const notionBookmarkBotHandler: TextHandler = async ({
   messageText,
 }) => {
   try {
-    console.log('Incoming message:', messageText)
-    const pageNumber = parseInt(messageText)
-    if (!isNaN(pageNumber)) {
-      let currentBook = await Book.getCurrentBook()
-      if (currentBook) {
-        if (!currentBook.totalPages) {
-          return replyNoTotalPages(currentBook)
-        }
-        await currentBook.createBookmark(pageNumber)
-
-        return replyBookmarked(pageNumber)
-      }
-
-      return replyNoCurrentBook()
+    const pageNumber = parsePageNumber(messageText)
+    if (pageNumber) {
+      return handlePageNumber(pageNumber)
     } else if (messageText.length > 5) {
-      let currentBook = await Book.getCurrentBook()
-
-      if (currentBook) {
-        await currentBook.appendQuote(messageText)
-
-        return replyQuoteSaved()
-      }
-
-      return replyNoCurrentBook()
+      return handleQuote(messageText)
     }
 
     return replyNotValid()
   } catch (err) {
     console.error(err)
   }
+}
+
+function parsePageNumber(messageText: string) {
+  const isPageNumber = /^\d+$/.test(messageText)
+  return isPageNumber ? parseInt(messageText) : null
+}
+
+async function handlePageNumber(pageNumber: number) {
+  let currentBook = await Book.getCurrentBook()
+  if (currentBook) {
+    if (!currentBook.totalPages) {
+      return replyNoTotalPages(currentBook)
+    }
+    await currentBook.createBookmark(pageNumber)
+
+    return replyBookmarked(pageNumber)
+  }
+
+  return replyNoCurrentBook()
+}
+
+async function handleQuote(messageText: string) {
+  let currentBook = await Book.getCurrentBook()
+
+  if (currentBook) {
+    await currentBook.appendQuote(messageText)
+
+    return replyQuoteSaved()
+  }
+
+  return replyNoCurrentBook()
 }
 
 async function replyBookmarked(pageNumber: number): Promise<TelegramResponse> {
