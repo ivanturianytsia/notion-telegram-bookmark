@@ -16,6 +16,8 @@ COPY . .
 # Build the TypeScript code
 RUN npm run build
 
+RUN npm test
+
 # Expose the desired port(s) for your application
 EXPOSE 3000
 

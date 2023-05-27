@@ -54,12 +54,22 @@ async function handleQuote(messageText: string) {
 
 async function replyBookmarked(pageNumber: number): Promise<TelegramResponse> {
   const currentBook = (await Book.getCurrentBook())! // We reload the book to get the latest data
-  const percentCompleted = await currentBook.getPercentCompleted()
-  const daysToFinish = await currentBook.getDaysToFinish()
 
   let message = `Marking page ${pageNumber} of _${currentBook.title}_\\.`
-  message += `\nNow at *${percentCompleted}%* of ${currentBook.totalPages} pages\\.`
-  message += `\n\\~${daysToFinish} days to go\\.`
+
+  try {
+    const percentCompleted = await currentBook.getPercentCompleted()
+    message += `\nNow at *${percentCompleted}%* of ${currentBook.totalPages} pages\\.`
+  } catch (err) {
+    console.error('Error calculating percent completed:', err)
+  }
+
+  try {
+    const daysToFinish = await currentBook.getDaysToFinish()
+    message += `\n\\~${daysToFinish} days to go\\.`
+  } catch (err) {
+    console.error('Error calculating days to finish:', err)
+  }
 
   return {
     formattedText: message,

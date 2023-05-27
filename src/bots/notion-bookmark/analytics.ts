@@ -5,6 +5,12 @@ export function getDaysToFinish(
   }[],
   totalPages: number
 ) {
+  if (readingSessions.length <= 0) {
+    throw new Error('No reading sessions')
+  }
+  if (totalPages <= 0) {
+    throw new Error('Invalid total pages')
+  }
   readingSessions = readingSessions.slice()
   readingSessions.sort((a, b) => {
     return new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -22,11 +28,13 @@ export function getDaysToFinish(
   )
 
   let newPrevEndPage = 0
-  const progressPerDay = Object.values(endPagePerDay).map((endPage) => {
-    const prevEndPage = newPrevEndPage
-    newPrevEndPage = Math.max(newPrevEndPage, endPage)
-    return Math.max(endPage - prevEndPage, 0)
-  })
+  const progressPerDay = Object.values(endPagePerDay)
+    .map((endPage) => {
+      const prevEndPage = newPrevEndPage
+      newPrevEndPage = Math.max(newPrevEndPage, endPage)
+      return Math.max(endPage - prevEndPage, 0)
+    })
+    .filter((progress) => progress > 0)
 
   const avgPerDay =
     progressPerDay.reduce((sum, progress) => {
