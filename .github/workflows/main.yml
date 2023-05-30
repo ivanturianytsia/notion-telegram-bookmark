@@ -10,6 +10,12 @@ jobs:
     env:
       PRIVATE_KEY: ${{ secrets.BOOKMARK_DROPLET_PRIVATE_KEY }}
       DROPLET_IP: ${{ vars.BOOKMARK_DROPLET_IP }}
+      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+      FLUENT_BOT_TOKEN: ${{ secrets.FLUENT_BOT_TOKEN }}
+      OPENAI_TOKEN: ${{ secrets.OPENAI_TOKEN }}
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      PORT: ${{ vars.PORT }}
+      DOMAIN: ${{ vars.DOMAIN }}
     steps:
       - run: echo "Deploying to DigitalOcean..."
       - name: Generate tag
@@ -23,7 +29,7 @@ jobs:
           ssh-keyscan -H $DROPLET_IP >> ~/.ssh/known_hosts
       - uses: actions/checkout@v2
       - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag ${{ steps.tag.outputs.tag }}
+        run: docker build . --file Dockerfile --tag ${{ steps.tag.outputs.tag }} --build-arg TAG=${{ steps.tag.outputs.tag }}
       - name: Remove old containers
         run: |
           ssh root@$DROPLET_IP 'docker stop $(docker ps -a -q); docker rm $(docker ps -a -q) || true'
@@ -32,6 +38,16 @@ jobs:
           ssh root@$DROPLET_IP 'docker rmi $(docker images -q) || true'
       - name: Copy the Docker image
         run: docker save ${{ steps.tag.outputs.tag }} | bzip2 | ssh root@$DROPLET_IP docker load
+      - name: Create .env file
+        run: |
+          echo "BOT_TOKEN=$BOT_TOKEN" >> .env;
+          echo "FLUENT_BOT_TOKEN=$FLUENT_BOT_TOKEN" >> .env;
+          echo "OPENAI_TOKEN=$OPENAI_TOKEN" >> .env;
+          echo "NOTION_TOKEN=$NOTION_TOKEN" >> .env;
+          echo "PORT=$PORT" >> .env;
+          echo "DOMAIN=$DOMAIN" >> .env
+      - name: Copy .env file to Remote Server
+        run: scp .env root@$DROPLET_IP:/root/.env
       - name: Deploy to Remote Server
         run: |
           ssh root@$DROPLET_IP 'docker run -p 3000:3000 --name notion-telegram-bookmark --env-file .env -d ${{ steps.tag.outputs.tag }}'

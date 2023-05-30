@@ -13,6 +13,10 @@ RUN npm install
 # Copy the rest of the project files to the working directory
 COPY . .
 
+ARG TAG=unknown
+
+ENV TAG=$TAG
+
 # Build the TypeScript code
 RUN npm run build
 
