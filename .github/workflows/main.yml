@@ -18,16 +18,16 @@ jobs:
       DOMAIN: ${{ vars.DOMAIN }}
     steps:
       - run: echo "Deploying to DigitalOcean..."
+      - uses: actions/checkout@v2
       - name: Generate tag
         id: tag
-        run: echo "::set-output name=tag::notion-telegram-bookmark:$(date +%s)"
+        run: echo "::set-output name=tag::notion-telegram-bookmark:$(date +%Y%m%d)-$GITHUB_SHA"
       - name: Configure SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "$PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $DROPLET_IP >> ~/.ssh/known_hosts
-      - uses: actions/checkout@v2
       - name: Build the Docker image
         run: docker build . --file Dockerfile --tag ${{ steps.tag.outputs.tag }} --build-arg TAG=${{ steps.tag.outputs.tag }}
       - name: Remove old containers
