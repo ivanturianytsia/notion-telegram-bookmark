@@ -12,6 +12,7 @@ jobs:
       DROPLET_IP: ${{ vars.BOOKMARK_DROPLET_IP }}
       BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
       FLUENT_BOT_TOKEN: ${{ secrets.FLUENT_BOT_TOKEN }}
+      GRATITUDE_BOT_TOKEN: ${{ secrets.GRATITUDE_BOT_TOKEN }}
       OPENAI_TOKEN: ${{ secrets.OPENAI_TOKEN }}
       NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
       PORT: ${{ vars.PORT }}
@@ -42,6 +43,7 @@ jobs:
         run: |
           echo "BOT_TOKEN=$BOT_TOKEN" >> .env;
           echo "FLUENT_BOT_TOKEN=$FLUENT_BOT_TOKEN" >> .env;
+          echo "GRATITUDE_BOT_TOKEN=$GRATITUDE_BOT_TOKEN" >> .env;
           echo "OPENAI_TOKEN=$OPENAI_TOKEN" >> .env;
           echo "NOTION_TOKEN=$NOTION_TOKEN" >> .env;
           echo "PORT=$PORT" >> .env;
