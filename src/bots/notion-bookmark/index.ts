@@ -3,6 +3,8 @@ import { TextHandler, TelegramResponse } from '../bot'
 
 const PROGRESS_ENABLED = false
 
+export const NOTION_BOOKMARK_BOT_NAME = 'notion-bookmark'
+
 export const notionBookmarkBotHandler: TextHandler = async ({
   chatId,
   messageText,

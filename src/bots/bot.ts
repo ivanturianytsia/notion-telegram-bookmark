@@ -2,39 +2,49 @@ import { Handler } from 'express'
 import { Telegraf } from 'telegraf'
 
 export class Bot {
-  private bot: Telegraf
+  public bot: Telegraf
 
-  constructor(public id: string, botToken: string, handleText: TextHandler) {
+  constructor(public id: string, botToken: string, handleText?: TextHandler) {
     if (!botToken) {
       throw new Error(`Bot token for ${this.id} is not set.`)
     }
 
     this.bot = new Telegraf(botToken)
 
-    this.bot.on('text', async (ctx) => {
-      console.log(new Date(), 'Incoming message:', ctx.message.text)
-      const response = await handleText({
-        chatId: ctx.message.chat.id,
-        messageText: ctx.message.text,
-      })
+    if (handleText) {
+      this.bot.on('text', async (ctx) => {
+        console.log(new Date(), 'Incoming message:', ctx.message.text)
+        const response = await handleText({
+          chatId: ctx.message.chat.id,
+          messageText: ctx.message.text,
+        })
 
-      if (response?.text) {
-        ctx.telegram.sendMessage(ctx.message.chat.id, response.text)
-        console.log(new Date(), 'Response:', response.text)
-      }
-      if (response?.formattedText) {
-        ctx.telegram.sendMessage(ctx.message.chat.id, response.formattedText, {
-          parse_mode: 'MarkdownV2',
-        })
-        console.log(new Date(), 'Response (formatted):', response.formattedText)
-      }
-      if (response?.img) {
-        ctx.telegram.sendPhoto(ctx.message.chat.id, {
-          source: response.img,
-        })
-        console.log(new Date(), 'Responded with image.')
-      }
-    })
+        if (response?.text) {
+          ctx.telegram.sendMessage(ctx.message.chat.id, response.text)
+          console.log(new Date(), 'Response:', response.text)
+        }
+        if (response?.formattedText) {
+          ctx.telegram.sendMessage(
+            ctx.message.chat.id,
+            response.formattedText,
+            {
+              parse_mode: 'MarkdownV2',
+            }
+          )
+          console.log(
+            new Date(),
+            'Response (formatted):',
+            response.formattedText
+          )
+        }
+        if (response?.img) {
+          ctx.telegram.sendPhoto(ctx.message.chat.id, {
+            source: response.img,
+          })
+          console.log(new Date(), 'Responded with image.')
+        }
+      })
+    }
 
     process.once('SIGINT', () => this.bot.stop('SIGINT'))
     process.once('SIGTERM', () => this.bot.stop('SIGTERM'))

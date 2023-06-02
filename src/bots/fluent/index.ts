@@ -1,6 +1,8 @@
 import { Configuration, OpenAIApi } from 'openai'
 import { TextHandler } from '../bot'
 
+export const FLUENT_BOT_NAME = 'fluent'
+
 export const fluentBotHandler: TextHandler = async (ctx) => {
   if (!ctx.messageText || ctx.messageText.length < 10) {
     return {

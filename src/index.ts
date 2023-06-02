@@ -4,7 +4,7 @@ import { launchServer } from './server'
 
 config()
 
-const bots = createBots()
+const bots = createBots(process.env.ENABLED_BOTS?.split(','))
 
 if (process.env.DOMAIN) {
   launchServer(bots)
