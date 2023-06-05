@@ -1,22 +1,31 @@
+import cron, { ScheduledTask } from 'node-cron'
 import { Bot } from '../bot'
-import { getCompletion } from '../../clients/openai'
-import { NotionClient } from '../../clients/notion'
-import { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
+import { getCompletion, getCompletionWithRetry } from '../../clients/openai'
+import {
+  GratitudeUser,
+  getRecordsForUserFromToday,
+  getUserByChatId,
+  getUsers,
+  saveRecord,
+  setUserName,
+} from './notion'
 
 export const GRATITUDE_BOT_NAME = 'gratitude'
 
-const USER_DATABASE_ID = '5c171fd07e9847e9b65013cc1c37bf88'
-const RECORDS_DATABASE_ID = '538e08b2797542d6a860bc69221f1d67'
-
-interface User {
-  id: string
-  chatId: number
-  name: string
-}
-
 export class GratitudeBot extends Bot {
+  NOTIFICATION_FREQUENCY = '0 16,23 * * *'
+  task: ScheduledTask
+
   constructor(botToken: string) {
     super(GRATITUDE_BOT_NAME, botToken)
+
+    this.task = cron.schedule(this.NOTIFICATION_FREQUENCY, async () => {
+      try {
+        this.sendReminder()
+      } catch (err) {
+        console.error('An error occured while sending reminder:', err)
+      }
+    })
 
     this.bot.start((ctx) => {
       try {
@@ -24,7 +33,7 @@ export class GratitudeBot extends Bot {
           `Hi! I'm a bot that helps you practice gratitude. What's your name?`
         )
       } catch (err) {
-        console.error(err)
+        console.error('An error occured while welcoming:', err)
       }
     })
 
@@ -36,146 +45,102 @@ export class GratitudeBot extends Bot {
         const user = await getUserByChatId(chatId)
 
         if (!user) {
-          const response = await handleNewUser(chatId, incomingMessage)
-          console.log('New user added:', {
-            chatId,
-            response,
-          })
-          ctx.telegram.sendMessage(chatId, response)
-          return
+          await this.handleNewUser(chatId, incomingMessage)
+        } else {
+          await this.handleNewRecord(user, incomingMessage)
         }
-
-        const response = await handleNewRecord(user, incomingMessage)
-        console.log('New record added:', {
-          chatId,
-          record: incomingMessage,
-          response,
-        })
-        ctx.telegram.sendMessage(chatId, response)
       } catch (err) {
-        console.error(err)
+        console.error('An error occured while generating response:', err)
       }
     })
   }
-}
 
-async function handleNewUser(chatId: number, incomingMessage: string) {
-  await setUserName(chatId, incomingMessage)
-  let prompt = `You are a chat bot that helps people practice gratitude`
-  prompt += `The user's name is ${incomingMessage}.`
-  prompt += `Your task is to welcome the user and ask them what they are grateful for today.`
-  prompt += `Your message must be short. Your message must be at most one sentence.`
-  const response = await getCompletion(
-    [
-      {
-        role: 'system',
-        content: prompt,
-      },
-    ],
-    0.5
-  )
-  return response
-}
+  async handleNewUser(chatId: number, incomingMessage: string) {
+    await setUserName(chatId, incomingMessage)
 
-async function handleNewRecord(user: User, incomingMessage: string) {
-  await saveRecord(user.id, incomingMessage)
-
-  let prompt = `You are a chat bot that helps people practice gratitude`
-  prompt += `The user's name is: ${user.name}.`
-  prompt += `Your task is to thank the user for journaling what they are grateful for today.`
-  prompt += `Your message must be short. Your message must be at most one sentence.`
-  prompt += `The user's gratitude journal entry is: ${incomingMessage}.`
-  const response = await getCompletion(
-    [
-      {
-        role: 'system',
-        content: prompt,
-      },
-    ],
-    0.5
-  )
-  return response
-}
-
-async function getUserByChatId(chatId: number) {
-  const { results } = await NotionClient.client.databases.query({
-    database_id: USER_DATABASE_ID,
-    filter: {
-      property: 'Chat Id',
-      number: {
-        equals: chatId,
-      },
-    },
-  })
-
-  if (results.length === 0) {
-    return null
+    let prompt = `You are a chat bot that helps people practice gratitude`
+    prompt += `The user's name is ${incomingMessage}.`
+    prompt += `Your task is to welcome the user and ask them what they are grateful for today.`
+    prompt += `Your message must be short. Your message must be at most one sentence.`
+    const response = await getCompletionWithRetry(
+      [
+        {
+          role: 'system',
+          content: prompt,
+        },
+      ],
+      0.5,
+      `Hi ${incomingMessage}! What are you grateful for today?`
+    )
+    console.log('New user added:', {
+      time: new Date(),
+      chatId,
+      response,
+    })
+    this.bot.telegram.sendMessage(chatId, response)
   }
 
-  const { Name: name, 'Chat Id': userChatId } = (
-    results[0] as PageObjectResponse
-  ).properties
+  async handleNewRecord(user: GratitudeUser, incomingMessage: string) {
+    await saveRecord(user.id!, incomingMessage)
 
-  const user: User = {
-    id: results[0].id,
-    chatId:
-      userChatId.type === 'number' && userChatId.number ? userChatId.number : 0,
-    name: name.type === 'title' ? name.title[0].plain_text : '',
+    let prompt = `You are a chat bot that helps people practice gratitude`
+    prompt += `The user's name is: ${user.name}.`
+    prompt += `Your task is to thank the user for journaling what they are grateful for today.`
+    prompt += `Your message must be short. Your message must be at most one sentence.`
+    prompt += `The user's gratitude journal entry is: ${incomingMessage}.`
+    const response = await getCompletionWithRetry(
+      [
+        {
+          role: 'system',
+          content: prompt,
+        },
+      ],
+      0.5,
+      `Thanks for journaling what you are grateful for today!`
+    )
+    console.log('New record added:', {
+      time: new Date(),
+      chatId: user.chatId,
+      record: incomingMessage,
+      response,
+    })
+    this.bot.telegram.sendMessage(user.chatId, response)
   }
 
-  return user
+  async sendReminder() {
+    const users = await getUsers()
+    for await (const user of users) {
+      const records = await getRecordsForUserFromToday(user.id!)
+      if (records.length > 0) {
+        continue
+      }
+      let prompt = `You are a chat bot that helps people practice gratitude`
+      prompt += `The user's name is: ${user.name}.`
+      prompt += `Your task is to remind the user to journal what they are grateful for today.`
+      prompt += `Your message must be short. Your message must be at most one sentence.`
+      // prompt += `The user's gratitude journal entry is: ${incomingMessage}.`
+      const response = await getCompletionWithRetry(
+        [
+          {
+            role: 'system',
+            content: prompt,
+          },
+        ],
+        0.5,
+        `Hi ${user.name}! What are you grateful for today?`
+      )
+      console.log('Sending reminder:', {
+        time: new Date(),
+        chatId: user.chatId,
+        response,
+      })
+      this.bot.telegram.sendMessage(user.chatId, response)
+
+      await sleep(20)
+    }
+  }
 }
 
-async function setUserName(chatId: number, name: string) {
-  return NotionClient.client.pages.create({
-    parent: {
-      database_id: USER_DATABASE_ID,
-    },
-    properties: {
-      Name: {
-        type: 'title',
-        title: [
-          {
-            type: 'text',
-            text: {
-              content: name,
-            },
-          },
-        ],
-      },
-      'Chat Id': {
-        type: 'number',
-        number: chatId,
-      },
-    },
-  })
-}
-
-async function saveRecord(userId: string, content: string) {
-  return NotionClient.client.pages.create({
-    parent: {
-      database_id: RECORDS_DATABASE_ID,
-    },
-    properties: {
-      Content: {
-        type: 'title',
-        title: [
-          {
-            type: 'text',
-            text: {
-              content,
-            },
-          },
-        ],
-      },
-      User: {
-        type: 'relation',
-        relation: [
-          {
-            id: userId,
-          },
-        ],
-      },
-    },
-  })
+function sleep(timeSec: number) {
+  return new Promise((resolve) => setTimeout(resolve, timeSec * 1000))
 }
