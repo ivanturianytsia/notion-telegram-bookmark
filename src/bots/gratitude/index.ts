@@ -21,7 +21,7 @@ export class GratitudeBot extends Bot {
 
     this.task = cron.schedule(this.NOTIFICATION_FREQUENCY, async () => {
       try {
-        this.sendReminder()
+        await this.sendReminder()
       } catch (err) {
         console.error('An error occured while sending reminder:', err)
       }
