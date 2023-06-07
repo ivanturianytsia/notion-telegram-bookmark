@@ -128,35 +128,22 @@ export async function getUsers() {
   )
 }
 
-export async function getRecordsForUserFromToday(userId: string) {
-  const today = new Date().toISOString().split('T')[0]
-  const startOfDay = today + 'T00:00:00'
-  const endOfDay = today + 'T23:59:59'
-
+export async function getLastRecords(userId: string, limit = 3) {
   const { results } = await NotionClient.client.databases.query({
     database_id: RECORDS_DATABASE_ID,
     filter: {
-      and: [
-        {
-          property: 'Created',
-          date: {
-            on_or_after: startOfDay,
-          },
-        },
-        {
-          property: 'Created',
-          date: {
-            on_or_before: endOfDay,
-          },
-        },
-        {
-          property: 'User',
-          relation: {
-            contains: userId,
-          },
-        },
-      ],
+      property: 'User',
+      relation: {
+        contains: userId,
+      },
     },
+    sorts: [
+      {
+        property: 'Created',
+        direction: 'descending',
+      },
+    ],
+    page_size: limit,
   })
 
   return results.map((result) =>

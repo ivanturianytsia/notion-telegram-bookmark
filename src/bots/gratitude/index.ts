@@ -1,19 +1,20 @@
 import cron, { ScheduledTask } from 'node-cron'
 import { Bot } from '../bot'
-import { getCompletion, getCompletionWithRetry } from '../../clients/openai'
+import { getCompletionWithRetry } from '../../clients/openai'
 import {
   GratitudeUser,
-  getRecordsForUserFromToday,
+  getLastRecords,
   getUserByChatId,
   getUsers,
   saveRecord,
   setUserName,
 } from './notion'
+import { isProduction } from '../../constants'
 
 export const GRATITUDE_BOT_NAME = 'gratitude'
 
 export class GratitudeBot extends Bot {
-  NOTIFICATION_FREQUENCY = '0 16,23 * * *'
+  NOTIFICATION_FREQUENCY = isProduction ? '0 16,23 * * *' : '* * * * *'
   task: ScheduledTask
 
   constructor(botToken: string) {
@@ -62,6 +63,7 @@ export class GratitudeBot extends Bot {
     prompt += `The user's name is ${incomingMessage}.`
     prompt += `Your task is to welcome the user and ask them what they are grateful for today.`
     prompt += `Your message must be short. Your message must be at most one sentence.`
+    const temperature = 0.5
     const response = await getCompletionWithRetry(
       [
         {
@@ -69,7 +71,7 @@ export class GratitudeBot extends Bot {
           content: prompt,
         },
       ],
-      0.5,
+      temperature,
       `Hi ${incomingMessage}! What are you grateful for today?`
     )
     console.log('New user added:', {
@@ -88,6 +90,7 @@ export class GratitudeBot extends Bot {
     prompt += `Your task is to thank the user for journaling what they are grateful for today.`
     prompt += `Your message must be short. Your message must be at most one sentence.`
     prompt += `The user's gratitude journal entry is: ${incomingMessage}.`
+    const temperature = 0.5
     const response = await getCompletionWithRetry(
       [
         {
@@ -95,7 +98,7 @@ export class GratitudeBot extends Bot {
           content: prompt,
         },
       ],
-      0.5,
+      temperature,
       `Thanks for journaling what you are grateful for today!`
     )
     console.log('New record added:', {
@@ -110,15 +113,34 @@ export class GratitudeBot extends Bot {
   async sendReminder() {
     const users = await getUsers()
     for await (const user of users) {
-      const records = await getRecordsForUserFromToday(user.id!)
-      if (records.length > 0) {
+      if (!isProduction && user.name !== 'Vanya') {
+        continue
+      }
+      const records = await getLastRecords(user.id!)
+      const fromToday = records.filter((record) => {
+        const today = new Date()
+        return (
+          record.created &&
+          record.created.getDate() === today.getDate() &&
+          record.created.getMonth() === today.getMonth() &&
+          record.created.getFullYear() === today.getFullYear()
+        )
+      })
+      if (fromToday.length > 0) {
         continue
       }
       let prompt = `You are a chat bot that helps people practice gratitude`
       prompt += `The user's name is: ${user.name}.`
       prompt += `Your task is to remind the user to journal what they are grateful for today.`
-      prompt += `Your message must be short. Your message must be at most one sentence.`
-      // prompt += `The user's gratitude journal entry is: ${incomingMessage}.`
+      prompt += `Your message must be short. Your message must be at most 1-2 sentences.`
+      if (records.length > 0) {
+        prompt += `Maybe, use a summary of their latest journal entries to encourage them to add a new one.`
+        prompt += `The user's latest gratitude journal entries were:`
+        records.forEach((record) => {
+          prompt += `- ${record.content}.`
+        })
+      }
+      const temperature = 0.7
       const response = await getCompletionWithRetry(
         [
           {
@@ -126,7 +148,7 @@ export class GratitudeBot extends Bot {
             content: prompt,
           },
         ],
-        0.5,
+        temperature,
         `Hi ${user.name}! What are you grateful for today?`
       )
       console.log('Sending reminder:', {

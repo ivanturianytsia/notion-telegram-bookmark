@@ -17,6 +17,7 @@ jobs:
       NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
       PORT: ${{ vars.PORT }}
       DOMAIN: ${{ vars.DOMAIN }}
+      ENV: production
     steps:
       - run: echo "Deploying to DigitalOcean..."
       - uses: actions/checkout@v2
@@ -48,6 +49,7 @@ jobs:
           echo "NOTION_TOKEN=$NOTION_TOKEN" >> .env;
           echo "PORT=$PORT" >> .env;
           echo "DOMAIN=$DOMAIN" >> .env
+          echo "ENV=$ENV" >> .env
       - name: Copy .env file to Remote Server
         run: scp .env root@$DROPLET_IP:/root/.env
       - name: Deploy to Remote Server
