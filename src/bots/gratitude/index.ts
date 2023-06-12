@@ -14,7 +14,7 @@ import { isProduction } from '../../constants'
 export const GRATITUDE_BOT_NAME = 'gratitude'
 
 export class GratitudeBot extends Bot {
-  NOTIFICATION_FREQUENCY = isProduction ? '0 16,23 * * *' : '* * * * *'
+  NOTIFICATION_FREQUENCY = isProduction ? '0 19,21 * * *' : '* * * * *'
   task: ScheduledTask
 
   constructor(botToken: string) {
