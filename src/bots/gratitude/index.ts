@@ -108,7 +108,7 @@ export class GratitudeBot extends Bot {
     console.log('New record added:', {
       time: new Date(),
       chatId: user.chatId,
-      record: incomingMessage,
+      incomingMessage,
       response,
     })
     await this.sendMessage(user.chatId, response)
@@ -117,7 +117,7 @@ export class GratitudeBot extends Bot {
     await this.shareWithFriends(user, incomingMessage)
   }
 
-  async shareWithFriends(friend: GratitudeUser, message: string) {
+  async shareWithFriends(friend: GratitudeUser, incomingMessage: string) {
     const users = await getUsers()
     for await (const user of users) {
       if (friend.id === user.id) {
@@ -129,7 +129,7 @@ export class GratitudeBot extends Bot {
       prompt += `Your message must be short. Your message must be at most 1-2 sentences.`
       prompt += `The user's name is: ${user.name}.`
       prompt += `The friend's name is: ${friend.name}.`
-      prompt += `The friend's gratitude jornal record for today is: ${message}.`
+      prompt += `The friend's gratitude jornal record for today is: ${incomingMessage}.`
       const temperature = 0.7
       const response = await getCompletionWithRetry(
         [
@@ -144,6 +144,7 @@ export class GratitudeBot extends Bot {
         console.log('Sharing record with friends:', {
           time: new Date(),
           chatId: user.chatId,
+          incomingMessage,
           response,
         })
         await this.sendMessage(user.chatId, response)
