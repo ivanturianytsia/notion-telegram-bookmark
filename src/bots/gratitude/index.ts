@@ -1,6 +1,9 @@
 import cron, { ScheduledTask } from 'node-cron'
 import { Bot } from '../bot'
-import { getCompletionWithRetry } from '../../clients/openai'
+import {
+  getCompletionWithRetry,
+  getCompletionWithRetryOrFallback,
+} from '../../clients/openai'
 import {
   GratitudeUser,
   getLastRecords,
@@ -14,7 +17,7 @@ import { isProduction } from '../../constants'
 export const GRATITUDE_BOT_NAME = 'gratitude'
 
 export class GratitudeBot extends Bot {
-  NOTIFICATION_FREQUENCY = isProduction ? '0 19,21 * * *' : '* * * * *'
+  NOTIFICATION_FREQUENCY = '0 19,21 * * *'
   task: ScheduledTask
 
   constructor(botToken: string) {
@@ -30,7 +33,8 @@ export class GratitudeBot extends Bot {
 
     this.bot.start((ctx) => {
       try {
-        ctx.reply(
+        this.sendMessage(
+          ctx.chat.id,
           `Hi! I'm a bot that helps you practice gratitude. What's your name?`
         )
       } catch (err) {
@@ -60,11 +64,11 @@ export class GratitudeBot extends Bot {
     await setUserName(chatId, incomingMessage)
 
     let prompt = `You are a chat bot that helps people practice gratitude`
-    prompt += `The user's name is ${incomingMessage}.`
     prompt += `Your task is to welcome the user and ask them what they are grateful for today.`
     prompt += `Your message must be short. Your message must be at most one sentence.`
+    prompt += `The user's name is ${incomingMessage}.`
     const temperature = 0.5
-    const response = await getCompletionWithRetry(
+    const response = await getCompletionWithRetryOrFallback(
       [
         {
           role: 'system',
@@ -79,19 +83,19 @@ export class GratitudeBot extends Bot {
       chatId,
       response,
     })
-    this.bot.telegram.sendMessage(chatId, response)
+    await this.sendMessage(chatId, response)
   }
 
   async handleNewRecord(user: GratitudeUser, incomingMessage: string) {
     await saveRecord(user.id!, incomingMessage)
 
     let prompt = `You are a chat bot that helps people practice gratitude`
-    prompt += `The user's name is: ${user.name}.`
     prompt += `Your task is to thank the user for journaling what they are grateful for today.`
     prompt += `Your message must be short. Your message must be at most one sentence.`
+    prompt += `The user's name is: ${user.name}.`
     prompt += `The user's gratitude journal entry is: ${incomingMessage}.`
     const temperature = 0.5
-    const response = await getCompletionWithRetry(
+    const response = await getCompletionWithRetryOrFallback(
       [
         {
           role: 'system',
@@ -107,15 +111,51 @@ export class GratitudeBot extends Bot {
       record: incomingMessage,
       response,
     })
-    this.bot.telegram.sendMessage(user.chatId, response)
+    await this.sendMessage(user.chatId, response)
+
+    await this.sleep(20)
+    await this.shareWithFriends(user, incomingMessage)
+  }
+
+  async shareWithFriends(friend: GratitudeUser, message: string) {
+    const users = await getUsers()
+    for await (const user of users) {
+      if (friend.id === user.id) {
+        continue
+      }
+      let prompt = `You are a chat bot that helps people practice gratitude`
+      prompt += `Your task is to encourage the user to journal what they are grateful for today `
+      prompt += `by sharing with the user what their friend was grateful for today.`
+      prompt += `Your message must be short. Your message must be at most 1-2 sentences.`
+      prompt += `The user's name is: ${user.name}.`
+      prompt += `The friend's name is: ${friend.name}.`
+      prompt += `The friend's gratitude jornal record for today is: ${message}.`
+      const temperature = 0.7
+      const response = await getCompletionWithRetry(
+        [
+          {
+            role: 'system',
+            content: prompt,
+          },
+        ],
+        temperature
+      )
+      if (response) {
+        console.log('Sharing record with friends:', {
+          time: new Date(),
+          chatId: user.chatId,
+          response,
+        })
+        await this.sendMessage(user.chatId, response)
+      }
+
+      await this.sleep(20)
+    }
   }
 
   async sendReminder() {
     const users = await getUsers()
     for await (const user of users) {
-      if (!isProduction && user.name !== 'Vanya') {
-        continue
-      }
       const records = await getLastRecords(user.id!)
       const fromToday = records.filter((record) => {
         const today = new Date()
@@ -130,9 +170,9 @@ export class GratitudeBot extends Bot {
         continue
       }
       let prompt = `You are a chat bot that helps people practice gratitude`
-      prompt += `The user's name is: ${user.name}.`
       prompt += `Your task is to remind the user to journal what they are grateful for today.`
       prompt += `Your message must be short. Your message must be at most 1-2 sentences.`
+      prompt += `The user's name is: ${user.name}.`
       if (records.length > 0) {
         prompt += `Maybe, use a summary of their latest journal entries to encourage them to add a new one.`
         prompt += `The user's latest gratitude journal entries were:`
@@ -141,7 +181,7 @@ export class GratitudeBot extends Bot {
         })
       }
       const temperature = 0.7
-      const response = await getCompletionWithRetry(
+      const response = await getCompletionWithRetryOrFallback(
         [
           {
             role: 'system',
@@ -156,13 +196,19 @@ export class GratitudeBot extends Bot {
         chatId: user.chatId,
         response,
       })
-      this.bot.telegram.sendMessage(user.chatId, response)
+      await this.sendMessage(user.chatId, response)
 
-      await sleep(20)
+      await this.sleep(20)
     }
   }
-}
 
-function sleep(timeSec: number) {
-  return new Promise((resolve) => setTimeout(resolve, timeSec * 1000))
+  async sendMessage(chatId: number, message: string) {
+    if (isProduction) {
+      await this.bot.telegram.sendMessage(chatId, message)
+    }
+  }
+
+  sleep(timeSec: number) {
+    return new Promise((resolve) => setTimeout(resolve, timeSec * 1000))
+  }
 }

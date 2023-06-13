@@ -27,8 +27,7 @@ export async function getCompletion(messages: AiMessage[], temperature = 0) {
 const MAX_RETRIES = 3
 export async function getCompletionWithRetry(
   messages: AiMessage[],
-  temperature = 0,
-  fallbackMessage: string
+  temperature = 0
 ) {
   let retries = MAX_RETRIES
   while (retries > 0) {
@@ -43,7 +42,16 @@ export async function getCompletionWithRetry(
       await sleep(20)
     }
   }
-  return fallbackMessage
+  return null
+}
+
+export async function getCompletionWithRetryOrFallback(
+  messages: AiMessage[],
+  temperature = 0,
+  fallbackMessage: string
+) {
+  const response = await getCompletionWithRetry(messages, temperature)
+  return response || fallbackMessage
 }
 
 function sleep(timeSec: number) {
