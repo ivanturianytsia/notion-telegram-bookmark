@@ -63,7 +63,7 @@ export class GratitudeBot extends Bot {
   async handleNewUser(chatId: number, incomingMessage: string) {
     await setUserName(chatId, incomingMessage)
 
-    let prompt = `You are a chat bot that helps people practice gratitude`
+    let prompt = `You are a chat bot that helps people practice gratitude.`
     prompt += `Your task is to welcome the user and ask them what they are grateful for today.`
     prompt += `Your message must be short. Your message must be at most one sentence.`
     prompt += `The user's name is ${incomingMessage}.`
@@ -89,11 +89,11 @@ export class GratitudeBot extends Bot {
   async handleNewRecord(user: GratitudeUser, incomingMessage: string) {
     await saveRecord(user.id!, incomingMessage)
 
-    let prompt = `You are a chat bot that helps people practice gratitude`
+    let prompt = `You are a chat bot that helps people practice gratitude.`
     prompt += `Your task is to thank the user for journaling what they are grateful for today.`
     prompt += `Your message must be short. Your message must be at most one sentence.`
     prompt += `The user's name is: ${user.name}.`
-    prompt += `The user's gratitude journal entry is: ${incomingMessage}.`
+    prompt += `The user's gratitude journal entry is: """${incomingMessage}""".`
     const temperature = 0.5
     const response = await getCompletionWithRetryOrFallback(
       [
@@ -123,13 +123,13 @@ export class GratitudeBot extends Bot {
       if (friend.id === user.id) {
         continue
       }
-      let prompt = `You are a chat bot that helps people practice gratitude`
+      let prompt = `You are a chat bot that helps people practice gratitude.`
       prompt += `Your task is to encourage the user to journal what they are grateful for today `
       prompt += `by sharing with the user what their friend was grateful for today.`
       prompt += `Your message must be short. Your message must be at most 1-2 sentences.`
       prompt += `The user's name is: ${user.name}.`
       prompt += `The friend's name is: ${friend.name}.`
-      prompt += `The friend's gratitude jornal record for today is: ${incomingMessage}.`
+      prompt += `The friend's gratitude jornal record for today is: """${incomingMessage}""".`
       const temperature = 0.7
       const response = await getCompletionWithRetry(
         [
@@ -170,7 +170,7 @@ export class GratitudeBot extends Bot {
       if (fromToday.length > 0) {
         continue
       }
-      let prompt = `You are a chat bot that helps people practice gratitude`
+      let prompt = `You are a chat bot that helps people practice gratitude.`
       prompt += `Your task is to remind the user to journal what they are grateful for today.`
       prompt += `Your message must be short. Your message must be at most 1-2 sentences.`
       prompt += `The user's name is: ${user.name}.`
@@ -178,7 +178,7 @@ export class GratitudeBot extends Bot {
         prompt += `Maybe, use a summary of their latest journal entries to encourage them to add a new one.`
         prompt += `The user's latest gratitude journal entries were:`
         records.forEach((record) => {
-          prompt += `- ${record.content}.`
+          prompt += `- """${record.content}""".`
         })
       }
       const temperature = 0.7
