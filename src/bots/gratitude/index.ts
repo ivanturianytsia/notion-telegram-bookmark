@@ -31,9 +31,9 @@ export class GratitudeBot extends Bot {
       }
     })
 
-    this.bot.start((ctx) => {
+    this.bot.start(async (ctx) => {
       try {
-        this.sendMessage(
+        await this.sendMessage(
           ctx.chat.id,
           `Hi! I'm a bot that helps you practice gratitude. What's your name?`
         )
@@ -89,22 +89,7 @@ export class GratitudeBot extends Bot {
   async handleNewRecord(user: GratitudeUser, incomingMessage: string) {
     await saveRecord(user.id!, incomingMessage)
 
-    let prompt = `You are a chat bot that helps people practice gratitude.`
-    prompt += `Your task is to thank the user for journaling what they are grateful for today.`
-    prompt += `Your message must be short. Your message must be at most one sentence.`
-    prompt += `The user's name is: ${user.name}.`
-    prompt += `The user's gratitude journal entry is: """${incomingMessage}""".`
-    const temperature = 0.5
-    const response = await getCompletionWithRetryOrFallback(
-      [
-        {
-          role: 'system',
-          content: prompt,
-        },
-      ],
-      temperature,
-      `Thanks for journaling what you are grateful for today!`
-    )
+    const response = `Thanks for journaling what you are grateful for today!`
     console.log('New record added:', {
       time: new Date(),
       chatId: user.chatId,
