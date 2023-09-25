@@ -13,37 +13,37 @@ export class Bot {
     this.bot = new Telegraf(botToken)
 
     if (handleText) {
-      this.bot.on('text', async (ctx) => {
+      this.bot.on('text', (ctx) => {
         console.log(new Date(), 'Incoming message:', ctx.message.text)
-        const response = await handleText({
+        handleText({
           chatId: ctx.message.chat.id,
           messageText: ctx.message.text,
+        }).then((response) => {
+          if (response?.text) {
+            ctx.telegram.sendMessage(ctx.message.chat.id, response.text)
+            console.log(new Date(), 'Response:', response.text)
+          }
+          if (response?.formattedText) {
+            ctx.telegram.sendMessage(
+              ctx.message.chat.id,
+              response.formattedText,
+              {
+                parse_mode: 'MarkdownV2',
+              }
+            )
+            console.log(
+              new Date(),
+              'Response (formatted):',
+              response.formattedText
+            )
+          }
+          if (response?.img) {
+            ctx.telegram.sendPhoto(ctx.message.chat.id, {
+              source: response.img,
+            })
+            console.log(new Date(), 'Responded with image.')
+          }
         })
-
-        if (response?.text) {
-          ctx.telegram.sendMessage(ctx.message.chat.id, response.text)
-          console.log(new Date(), 'Response:', response.text)
-        }
-        if (response?.formattedText) {
-          ctx.telegram.sendMessage(
-            ctx.message.chat.id,
-            response.formattedText,
-            {
-              parse_mode: 'MarkdownV2',
-            }
-          )
-          console.log(
-            new Date(),
-            'Response (formatted):',
-            response.formattedText
-          )
-        }
-        if (response?.img) {
-          ctx.telegram.sendPhoto(ctx.message.chat.id, {
-            source: response.img,
-          })
-          console.log(new Date(), 'Responded with image.')
-        }
       })
     }
 
