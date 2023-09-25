@@ -1,8 +1,9 @@
 import express from 'express'
 import { Bot } from '../bots/bot'
+import { PORT, TAG } from '../constants'
 
 export const launchServer = (bots?: Bot[]) => {
-  const port = process.env.PORT || 3000
+  const port = PORT || 3000
 
   const app = express()
 
@@ -13,7 +14,7 @@ export const launchServer = (bots?: Bot[]) => {
   }
 
   app.get('/', (req, res) => {
-    res.send(`The bot is working! Tag: ${process.env.TAG || 'unknown'}`)
+    res.send(`The bot is working! Tag: ${TAG || 'unknown'}`)
   })
 
   app.listen(port, () => {

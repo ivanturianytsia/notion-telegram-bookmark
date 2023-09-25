@@ -1,15 +1,10 @@
-import { config } from 'dotenv'
 import { createBots } from './bots'
 import { launchServer } from './server'
-import { isProduction } from './constants'
+import { DOMAIN, ENABLED_BOTS } from './constants'
 
-config()
+const bots = createBots(ENABLED_BOTS)
 
-const bots = createBots(
-  isProduction ? undefined : process.env.ENABLED_BOTS?.split(',')
-)
-
-if (process.env.DOMAIN) {
+if (DOMAIN) {
   launchServer(bots)
 } else {
   bots.forEach((bot) => {

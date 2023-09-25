@@ -1,4 +1,5 @@
 import { Configuration, OpenAIApi } from 'openai'
+import { OPENAI_TOKEN } from '../constants'
 
 interface AiMessage {
   role: 'user' | 'system'
@@ -6,12 +7,12 @@ interface AiMessage {
 }
 
 export async function getCompletion(messages: AiMessage[], temperature = 0) {
-  if (!process.env.OPENAI_TOKEN) {
+  if (!OPENAI_TOKEN) {
     throw new Error('OPENAI_TOKEN not set')
   }
 
   const configuration = new Configuration({
-    apiKey: process.env.OPENAI_TOKEN,
+    apiKey: OPENAI_TOKEN,
   })
   const openai = new OpenAIApi(configuration)
 

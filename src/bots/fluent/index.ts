@@ -1,5 +1,6 @@
 import { Configuration, OpenAIApi } from 'openai'
 import { TextHandler } from '../bot'
+import { OPENAI_TOKEN } from '../../constants'
 
 export const FLUENT_BOT_NAME = 'fluent'
 
@@ -31,7 +32,7 @@ export const fluentBotHandler: TextHandler = async (ctx) => {
 
 async function getCompletion(prompt: string) {
   const configuration = new Configuration({
-    apiKey: process.env.OPENAI_TOKEN,
+    apiKey: OPENAI_TOKEN,
   })
   const openai = new OpenAIApi(configuration)
 

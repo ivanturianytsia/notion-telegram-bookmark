@@ -1,5 +1,6 @@
 import { Handler } from 'express'
 import { Telegraf } from 'telegraf'
+import { WEBHOOK_PORT, DOMAIN } from '../constants'
 
 export class Bot {
   public bot: Telegraf
@@ -56,17 +57,15 @@ export class Bot {
   }
 
   handleWebhook(webhookPath: string): Handler {
-    if (!process.env.DOMAIN) {
+    if (!DOMAIN) {
       throw new Error(`DOMAIN for ${this.id} is not set.`)
     }
-    const port = !isNaN(parseInt(process.env.WEBHOOK_PORT!))
-      ? parseInt(process.env.WEBHOOK_PORT!)
+    const port = !isNaN(parseInt(WEBHOOK_PORT!))
+      ? parseInt(WEBHOOK_PORT!)
       : 3001
 
     console.log(`Bot ${this.id} is starting! (webhook mode)`)
-    this.bot.telegram.setWebhook(
-      `https://${process.env.DOMAIN}/bot/webhook/${this.id}`
-    )
+    this.bot.telegram.setWebhook(`https://${DOMAIN}/bot/webhook/${this.id}`)
     return this.bot.webhookCallback(webhookPath)
   }
 }

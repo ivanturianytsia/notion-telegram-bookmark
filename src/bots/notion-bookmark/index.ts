@@ -34,6 +34,9 @@ async function handlePageNumber(pageNumber: number) {
     if (!currentBook.totalPages) {
       return replyNoTotalPages(currentBook)
     }
+    if (pageNumber > currentBook.totalPages) {
+      return replyPageOutOfRange(currentBook)
+    }
     await currentBook.createBookmark(pageNumber)
 
     return replyBookmarked(pageNumber)
@@ -80,6 +83,11 @@ async function replyBookmarked(pageNumber: number): Promise<TelegramResponse> {
 
 function replyNoTotalPages(currentBook: Book): TelegramResponse {
   const message = `Your current book _${currentBook.title}_ has no total pages number set\\. Log into notion\\.so and set Pages property for the book\\.`
+  return { formattedText: message }
+}
+
+function replyPageOutOfRange(currentBook: Book): TelegramResponse {
+  const message = `The provided number is out of range\\. Your current book _${currentBook.title}_ has ${currentBook.totalPages} pages in total\\.`
   return { formattedText: message }
 }
 

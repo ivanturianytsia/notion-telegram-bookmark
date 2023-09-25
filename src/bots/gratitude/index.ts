@@ -12,7 +12,7 @@ import {
   saveRecord,
   setUserName,
 } from './notion'
-import { isProduction } from '../../constants'
+import { IS_PRODUCTION } from '../../constants'
 
 export const GRATITUDE_BOT_NAME = 'gratitude'
 
@@ -23,40 +23,36 @@ export class GratitudeBot extends Bot {
   constructor(botToken: string) {
     super(GRATITUDE_BOT_NAME, botToken)
 
-    this.task = cron.schedule(this.NOTIFICATION_FREQUENCY, async () => {
-      try {
-        await this.sendReminder()
-      } catch (err) {
+    this.task = cron.schedule(this.NOTIFICATION_FREQUENCY, () => {
+      this.sendReminder().catch((err) => {
         console.error('An error occured while sending reminder:', err)
-      }
+      })
     })
 
-    this.bot.start(async (ctx) => {
-      try {
-        await this.sendMessage(
-          ctx.chat.id,
-          `Hi! I'm a bot that helps you practice gratitude. What's your name?`
-        )
-      } catch (err) {
+    this.bot.start((ctx) => {
+      this.sendMessage(
+        ctx.chat.id,
+        `Hi! I'm a bot that helps you practice gratitude. What's your name?`
+      ).catch((err) => {
         console.error('An error occured while welcoming:', err)
-      }
+      })
     })
 
-    this.bot.on('text', async (ctx) => {
-      try {
-        const chatId = ctx.message.chat.id
-        const incomingMessage = ctx.message.text
+    this.bot.on('text', (ctx) => {
+      const chatId = ctx.message.chat.id
+      const incomingMessage = ctx.message.text
 
-        const user = await getUserByChatId(chatId)
-
-        if (!user) {
-          await this.handleNewUser(chatId, incomingMessage)
-        } else {
-          await this.handleNewRecord(user, incomingMessage)
-        }
-      } catch (err) {
-        console.error('An error occured while generating response:', err)
-      }
+      getUserByChatId(chatId)
+        .then((user) => {
+          if (!user) {
+            return this.handleNewUser(chatId, incomingMessage)
+          } else {
+            return this.handleNewRecord(user, incomingMessage)
+          }
+        })
+        .catch((err) => {
+          console.error('An error occured while generating response:', err)
+        })
     })
   }
 
@@ -189,7 +185,7 @@ export class GratitudeBot extends Bot {
   }
 
   async sendMessage(chatId: number, message: string) {
-    if (isProduction) {
+    if (IS_PRODUCTION) {
       await this.bot.telegram.sendMessage(chatId, message)
     }
   }
