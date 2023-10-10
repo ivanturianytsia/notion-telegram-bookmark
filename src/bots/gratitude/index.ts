@@ -13,15 +13,20 @@ import {
   setUserName,
 } from './notion'
 import { IS_PRODUCTION } from '../../constants'
+import { GratitudeBotResponseGenerator } from './response'
+import { ChatGptResponseGenerator } from './response/chatgpt'
 
 export const GRATITUDE_BOT_NAME = 'gratitude'
 
 export class GratitudeBot extends Bot {
   NOTIFICATION_FREQUENCY = '0 19,21 * * *'
   task: ScheduledTask
+  responseGenerator: GratitudeBotResponseGenerator
 
   constructor(botToken: string) {
     super(GRATITUDE_BOT_NAME, botToken)
+
+    this.responseGenerator = new ChatGptResponseGenerator()
 
     this.task = cron.schedule(this.NOTIFICATION_FREQUENCY, () => {
       this.sendReminder().catch((err) => {
@@ -59,21 +64,8 @@ export class GratitudeBot extends Bot {
   async handleNewUser(chatId: number, incomingMessage: string) {
     await setUserName(chatId, incomingMessage)
 
-    let prompt = `You are a chat bot that helps people practice gratitude.`
-    prompt += `Your task is to welcome the user and ask them what they are grateful for today.`
-    prompt += `Your message must be short. Your message must be at most one sentence.`
-    prompt += `The user's name is ${incomingMessage}.`
-    const temperature = 0.5
-    const response = await getCompletionWithRetryOrFallback(
-      [
-        {
-          role: 'system',
-          content: prompt,
-        },
-      ],
-      temperature,
-      `Hi ${incomingMessage}! What are you grateful for today?`
-    )
+    const response = await this.responseGenerator.welcome(incomingMessage)
+
     console.log('New user added:', {
       time: new Date(),
       chatId,
@@ -85,7 +77,10 @@ export class GratitudeBot extends Bot {
   async handleNewRecord(user: GratitudeUser, incomingMessage: string) {
     await saveRecord(user.id!, incomingMessage)
 
-    const response = `Thanks for journaling what you are grateful for today!`
+    const response = await this.responseGenerator.newRecord(
+      user.name,
+      incomingMessage
+    )
     console.log('New record added:', {
       time: new Date(),
       chatId: user.chatId,
@@ -104,22 +99,10 @@ export class GratitudeBot extends Bot {
       if (friend.id === user.id) {
         continue
       }
-      let prompt = `You are a chat bot that helps people practice gratitude.`
-      prompt += `Your task is to encourage the user to journal what they are grateful for today `
-      prompt += `by sharing with the user what their friend was grateful for today.`
-      prompt += `Your message must be short. Your message must be at most 1-2 sentences.`
-      prompt += `The user's name is: ${user.name}.`
-      prompt += `The friend's name is: ${friend.name}.`
-      prompt += `The friend's gratitude jornal record for today is: """${incomingMessage}""".`
-      const temperature = 0.7
-      const response = await getCompletionWithRetry(
-        [
-          {
-            role: 'system',
-            content: prompt,
-          },
-        ],
-        temperature
+      const response = await this.responseGenerator.shareWithFriends(
+        user.name,
+        friend.name,
+        incomingMessage
       )
       if (response) {
         console.log('Sharing record with friends:', {
@@ -151,27 +134,10 @@ export class GratitudeBot extends Bot {
       if (fromToday.length > 0) {
         continue
       }
-      let prompt = `You are a chat bot that helps people practice gratitude.`
-      prompt += `Your task is to remind the user to journal what they are grateful for today.`
-      prompt += `Your message must be short. Your message must be at most 1-2 sentences.`
-      prompt += `The user's name is: ${user.name}.`
-      if (records.length > 0) {
-        prompt += `Maybe, use a summary of their latest journal entries to encourage them to add a new one.`
-        prompt += `The user's latest gratitude journal entries were:`
-        records.forEach((record) => {
-          prompt += `- """${record.content}""".`
-        })
-      }
-      const temperature = 0.7
-      const response = await getCompletionWithRetryOrFallback(
-        [
-          {
-            role: 'system',
-            content: prompt,
-          },
-        ],
-        temperature,
-        `Hi ${user.name}! What are you grateful for today?`
+
+      const response = await this.responseGenerator.reminder(
+        user.name,
+        records.map((record) => record.content)
       )
       console.log('Sending reminder:', {
         time: new Date(),
