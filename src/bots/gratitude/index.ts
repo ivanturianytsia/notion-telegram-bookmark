@@ -1,10 +1,6 @@
 import cron, { ScheduledTask } from 'node-cron'
 import { Bot } from '../bot'
 import {
-  getCompletionWithRetry,
-  getCompletionWithRetryOrFallback,
-} from '../../clients/openai'
-import {
   GratitudeUser,
   getLastRecords,
   getUserByChatId,
@@ -12,9 +8,10 @@ import {
   saveRecord,
   setUserName,
 } from './notion'
-import { IS_PRODUCTION } from '../../constants'
+import { IS_PRODUCTION, USE_CHAT_GPT } from '../../constants'
 import { GratitudeBotResponseGenerator } from './response'
 import { ChatGptResponseGenerator } from './response/chatgpt'
+import { PlainResponseGenerator } from './response/plain'
 
 export const GRATITUDE_BOT_NAME = 'gratitude'
 
@@ -26,7 +23,9 @@ export class GratitudeBot extends Bot {
   constructor(botToken: string) {
     super(GRATITUDE_BOT_NAME, botToken)
 
-    this.responseGenerator = new ChatGptResponseGenerator()
+    this.responseGenerator = USE_CHAT_GPT
+      ? new ChatGptResponseGenerator()
+      : new PlainResponseGenerator()
 
     this.task = cron.schedule(this.NOTIFICATION_FREQUENCY, () => {
       this.sendReminder().catch((err) => {

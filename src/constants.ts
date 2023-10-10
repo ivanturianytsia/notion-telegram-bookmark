@@ -19,3 +19,4 @@ export const DOMAIN = process.env.DOMAIN
 export const WEBHOOK_PORT = process.env.WEBHOOK_PORT
 export const PORT = process.env.PORT
 export const TAG = process.env.TAG
+export const USE_CHAT_GPT = false
