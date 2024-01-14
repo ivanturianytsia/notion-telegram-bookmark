@@ -1,5 +1,6 @@
 import { Book } from './notion'
 import { TextHandler, TelegramResponse } from '../bot'
+import { getAveragePerDay } from './analytics'
 
 const PROGRESS_ENABLED = false
 
@@ -13,6 +14,8 @@ export const notionBookmarkBotHandler: TextHandler = async ({
     const pageNumber = parsePageNumber(messageText)
     if (pageNumber) {
       return handlePageNumber(pageNumber)
+    } else if (['stat', 'stats'].includes(messageText)) {
+      return handleStats()
     } else if (messageText.length > 5) {
       return handleQuote(messageText)
     }
@@ -39,7 +42,21 @@ async function handlePageNumber(pageNumber: number) {
     }
     await currentBook.createBookmark(pageNumber)
 
+    if (pageNumber === currentBook.totalPages) {
+      return replyCompleted(currentBook)
+    }
+
     return replyBookmarked(pageNumber)
+  }
+
+  return replyNoCurrentBook()
+}
+
+async function handleStats() {
+  let currentBook = await Book.getCurrentBook()
+
+  if (currentBook) {
+    return replyStats(currentBook)
   }
 
   return replyNoCurrentBook()
@@ -91,10 +108,29 @@ function replyPageOutOfRange(currentBook: Book): TelegramResponse {
   return { formattedText: message }
 }
 
+async function replyCompleted(currentBook: Book): Promise<TelegramResponse> {
+  const rawAvg = await currentBook.getAveragePerDay()
+  const rawStartDay = await currentBook.getStartDay()
+  const readingDays = await currentBook.getReadingDays()
+
+  const averagePerDay = rawAvg.toFixed(1).toString().replace('.', '\\.')
+  const startDay = rawStartDay.toLocaleDateString('en-US', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+
+  let message = `Congratulations, you completed _${currentBook.title}_\\!`
+  message += `\nYou started on *${startDay}* and read for *${readingDays}* days`
+  message += ` with an average of *${averagePerDay}* pages per day\\. `
+  return { formattedText: message }
+}
+
 function replyNoCurrentBook() {
   return {
     formattedText:
-      "You currently have no books in progress. Log into notion.so and mark a book as 'In Progress'.",
+      "You currently have no books in progress\\. Log into [notion\\.so](https://notion\\.so) and mark a book as 'In Progress'\\.",
   }
 }
 
@@ -108,4 +144,28 @@ function replyNotValid() {
   return {
     formattedText: 'Please specify a page number or send a quote\\.',
   }
+}
+
+async function replyStats(currentBook: Book): Promise<TelegramResponse> {
+  const rawAvg = await currentBook.getAveragePerDay()
+  const rawStartDay = await currentBook.getStartDay()
+  const readingDays = await currentBook.getReadingDays()
+  const percentCompleted = await currentBook.getPercentCompleted()
+  const daysToFinish = await currentBook.getDaysToFinish()
+
+  const averagePerDay = rawAvg.toFixed(1).toString().replace('.', '\\.')
+  const startDay = rawStartDay.toLocaleDateString('en-US', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+
+  let message = `Stats for _${currentBook.title}_`
+  message += `\nStart date: *${startDay}*`
+  message += `\nReading days: *${readingDays}* days`
+  message += `\nAvg pace: *${averagePerDay}* pages/day`
+  message += `\nProgress: *${percentCompleted}%*`
+  message += `\nUntil completion: *${daysToFinish}* days`
+  return { formattedText: message }
 }

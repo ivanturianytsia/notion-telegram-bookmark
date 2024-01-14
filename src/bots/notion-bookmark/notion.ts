@@ -1,5 +1,10 @@
 import { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
-import { getDaysToFinish } from './analytics'
+import {
+  getAveragePerDay,
+  getDaysToFinish,
+  getReadingDays,
+  getStartDay,
+} from './analytics'
 import { NotionClient } from '../../clients/notion'
 
 const BOOK_DATABASE_ID = 'c50dd28e9a3a420b991261359efc205d'
@@ -89,6 +94,21 @@ export class Book {
   public async getDaysToFinish() {
     const readingSessions = await this.getProgress()
     return getDaysToFinish(readingSessions, this.totalPages)
+  }
+
+  public async getAveragePerDay() {
+    const readingSessions = await this.getProgress()
+    return getAveragePerDay(readingSessions)
+  }
+
+  public async getStartDay() {
+    const readingSessions = await this.getProgress()
+    return new Date(getStartDay(readingSessions))
+  }
+
+  public async getReadingDays() {
+    const readingSessions = await this.getProgress()
+    return getReadingDays(readingSessions)
   }
 
   static async getCurrentBook(): Promise<Book | null> {
