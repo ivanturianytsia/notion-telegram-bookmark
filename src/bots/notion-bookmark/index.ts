@@ -1,8 +1,5 @@
 import { Book } from './notion'
 import { TextHandler, TelegramResponse } from '../bot'
-import { getAveragePerDay } from './analytics'
-
-const PROGRESS_ENABLED = false
 
 export const NOTION_BOOKMARK_BOT_NAME = 'notion-bookmark'
 
@@ -12,9 +9,10 @@ export const notionBookmarkBotHandler: TextHandler = async ({
 }) => {
   try {
     const pageNumber = parsePageNumber(messageText)
+    const command = messageText.toLowerCase().trim()
     if (pageNumber) {
       return handlePageNumber(pageNumber)
-    } else if (['stat', 'stats'].includes(messageText)) {
+    } else if (['stat', 'stats'].includes(command)) {
       return handleStats()
     } else if (messageText.length > 5) {
       return handleQuote(messageText)
