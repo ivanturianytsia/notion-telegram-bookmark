@@ -114,21 +114,15 @@ export class Book {
   static async getCurrentBook(): Promise<Book | null> {
     const currentBooks = await Book.getCurrentBooks()
 
-    if (currentBooks.results.length === 0) {
+    if (currentBooks.length === 0) {
       return null
     }
 
-    const currentBook = currentBooks.results[0]
-
-    if (!('properties' in currentBook)) {
-      return null
-    }
-
-    return Book.fromNotion(currentBook)
+    return currentBooks[0]
   }
 
   static async getCurrentBooks() {
-    return NotionClient.client.databases.query({
+    const { results } = await NotionClient.client.databases.query({
       database_id: BOOK_DATABASE_ID,
       filter: {
         property: 'Status',
@@ -136,6 +130,14 @@ export class Book {
           equals: 'In Progress',
         },
       },
+    })
+
+    return (
+      results.filter((book) => {
+        return 'properties' in book
+      }) as PageObjectResponse[]
+    ).map((book) => {
+      return Book.fromNotion(book)
     })
   }
 

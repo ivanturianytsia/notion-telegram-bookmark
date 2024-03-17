@@ -19,6 +19,7 @@ jobs:
       DOMAIN: ${{ vars.DOMAIN }}
       ENABLED_BOTS: ${{ vars.ENABLED_BOTS }}
       ENV: production
+      PASSWORD: ${{ secrets.PASSWORD }}
     steps:
       - run: echo "Deploying to DigitalOcean..."
       - uses: actions/checkout@v2
@@ -52,6 +53,7 @@ jobs:
           echo "DOMAIN=$DOMAIN" >> .env
           echo "ENV=$ENV" >> .env
           echo "ENABLED_BOTS=$ENABLED_BOTS" >> .env
+          echo "PASSWORD=$PASSWORD" >> .env
       - name: Copy .env file to Remote Server
         run: scp .env root@$DROPLET_IP:/root/.env
       - name: Deploy to Remote Server
