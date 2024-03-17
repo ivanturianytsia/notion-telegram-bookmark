@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon --watch 'src/**' --ext 'ts,json,handlebars' --exec 'ts-node src/index.ts'",
-    "build": "npm install && tsc && npm run copy:views",
-    "copy:views": "cp -r ./src/views ./dist",
+    "build": "npm install && tsc && npm run copy",
+    "copy": "cp -r ./src/views ./dist && cp -r ./src/public ./dist",
     "start:prod": "node ./dist/index.js",
     "test": "jest",
     "ssh": "/usr/bin/ssh bookmark-droplet"

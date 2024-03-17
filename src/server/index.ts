@@ -26,6 +26,8 @@ export const launchServer = (bots?: Bot[]) => {
     })
   }
 
+  app.use('/public', express.static(path.join(__dirname, '../public')))
+
   app.get('/', async (req, res) => {
     try {
       const authCookie = req.cookies.auth
