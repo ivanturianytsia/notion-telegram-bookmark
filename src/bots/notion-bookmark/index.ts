@@ -1,5 +1,6 @@
 import { Book } from './notion'
 import { TextHandler, TelegramResponse } from '../bot'
+import { parsePageNumber } from '../../helpers'
 
 export const NOTION_BOOKMARK_BOT_NAME = 'notion-bookmark'
 
@@ -22,11 +23,6 @@ export const notionBookmarkBotHandler: TextHandler = async ({
   } catch (err) {
     console.error(err)
   }
-}
-
-function parsePageNumber(messageText: string) {
-  const isPageNumber = /^\d+$/.test(messageText)
-  return isPageNumber ? parseInt(messageText) : null
 }
 
 async function handlePageNumber(pageNumber: number) {

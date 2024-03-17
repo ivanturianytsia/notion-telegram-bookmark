@@ -142,9 +142,15 @@ export class Book {
   }
 
   static async getBookbyId(bookId: string) {
-    return NotionClient.client.pages.retrieve({
+    const result = await NotionClient.client.pages.retrieve({
       page_id: bookId,
     })
+
+    if ('properties' in result) {
+      return Book.fromNotion(result)
+    }
+
+    return null
   }
 
   static fromNotion(book: PageObjectResponse) {

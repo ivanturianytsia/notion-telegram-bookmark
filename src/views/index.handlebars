@@ -3,6 +3,11 @@
 <ul>
 {{#each books}}
   <li>{{this.title}}</li>
+  <form action="/record" method="post">
+    <input type="number" name="page" id="page">
+    <input type="hidden" name="book" id="book" value="{{{this.id}}}">
+    <input type="submit" value="Bookmark">
+  </form>
 {{/each}}
 </ul>
 {{/if}}
