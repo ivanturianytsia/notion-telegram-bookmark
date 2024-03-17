@@ -74,8 +74,7 @@ async function replyBookmarked(pageNumber: number): Promise<TelegramResponse> {
   let message = `Marking page ${pageNumber} of _${currentBook.title}_\\.`
 
   try {
-    const percentCompleted = await currentBook.getPercentCompleted()
-    message += `\nNow at *${percentCompleted}%* of ${currentBook.totalPages} pages\\.`
+    message += `\nNow at *${currentBook.percentCompleted}%* of ${currentBook.totalPages} pages\\.`
   } catch (err) {
     console.error('Error calculating percent completed:', err)
   }
@@ -144,7 +143,6 @@ async function replyStats(currentBook: Book): Promise<TelegramResponse> {
   const rawAvg = await currentBook.getAveragePerDay()
   const rawStartDay = await currentBook.getStartDay()
   const readingDays = await currentBook.getReadingDays()
-  const percentCompleted = await currentBook.getPercentCompleted()
   const daysToFinish = await currentBook.getDaysToFinish()
 
   const averagePerDay = rawAvg.toFixed(1).toString().replace('.', '\\.')
@@ -159,7 +157,7 @@ async function replyStats(currentBook: Book): Promise<TelegramResponse> {
   message += `\nStart date: *${startDay}*`
   message += `\nReading days: *${readingDays}* days`
   message += `\nAvg pace: *${averagePerDay}* pages/day`
-  message += `\nProgress: *${percentCompleted}%*`
+  message += `\nProgress: *${currentBook.percentCompleted}%*`
   message += `\nUntil completion: *${daysToFinish}* days`
   return { formattedText: message }
 }

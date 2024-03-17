@@ -14,16 +14,10 @@ export class Book {
   constructor(
     public id: string,
     public title: string,
-    public totalPages: number
+    public totalPages: number,
+    public bookmark: number,
+    public percentCompleted: number
   ) {}
-
-  public async getPercentCompleted() {
-    const readingSessions = await this.getProgress()
-
-    return Math.max(
-      ...readingSessions.map(({ percentCompleted }) => percentCompleted)
-    )
-  }
 
   public createBookmark(pageNumber: number) {
     return NotionClient.client.pages.create({
@@ -165,7 +159,19 @@ export class Book {
         ? book.properties.Pages.number || 0
         : 0
 
-    return new Book(book.id, title, totalPages)
+    const bookmark =
+      book.properties.Bookmark?.type === 'rollup' &&
+      book.properties.Bookmark.rollup.type === 'number'
+        ? book.properties.Bookmark.rollup.number || 0
+        : 0
+
+    const percentCompleted =
+      book.properties['Completed %']?.type === 'rollup' &&
+      book.properties['Completed %'].rollup.type === 'number'
+        ? book.properties['Completed %'].rollup.number || 0
+        : 0
+
+    return new Book(book.id, title, totalPages, bookmark, percentCompleted)
   }
 }
 

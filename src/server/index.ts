@@ -27,17 +27,22 @@ export const launchServer = (bots?: Bot[]) => {
   }
 
   app.get('/', async (req, res) => {
-    const authCookie = req.cookies.auth
+    try {
+      const authCookie = req.cookies.auth
 
-    let books: Book[] | null = null
-    if (authCookie === PASSWORD) {
-      books = await Book.getCurrentBooks()
+      let books: Book[] | null = null
+      if (authCookie === PASSWORD) {
+        books = await Book.getCurrentBooks()
+      }
+
+      res.render('index', {
+        tag: TAG || 'unknown',
+        books,
+      })
+    } catch (err: any) {
+      console.error(err)
+      renderError(res, err.message)
     }
-
-    res.render('index', {
-      tag: TAG || 'unknown',
-      books,
-    })
   })
 
   app.get('/login', (req, res) => {
