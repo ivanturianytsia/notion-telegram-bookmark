@@ -5,7 +5,7 @@ import { engine } from 'express-handlebars'
 
 import { Bot } from '../bots/bot'
 import { PASSWORD, PORT, TAG } from '../constants'
-import { Book } from '../bots/notion-bookmark/notion'
+import { Book } from '../bots/notion-bookmark/Book'
 import { parsePageNumber } from '../helpers'
 
 export const launchServer = (bots?: Bot[]) => {

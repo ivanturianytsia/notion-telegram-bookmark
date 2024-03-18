@@ -1,4 +1,4 @@
-import { Book } from './notion'
+import { Book } from './Book'
 import { TextHandler, TelegramResponse } from '../bot'
 import { parsePageNumber } from '../../helpers'
 
