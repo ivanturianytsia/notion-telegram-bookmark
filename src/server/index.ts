@@ -75,7 +75,7 @@ export const launchServer = (bots?: Bot[]) => {
       renderError(res, 'Access denied.')
       return
     }
-    res.cookie('auth', req.query.password)
+    res.cookie('auth', req.query.password, { maxAge: 1000 * 60 * 60 * 24 * 14 })
     res.redirect('/')
   })
 
