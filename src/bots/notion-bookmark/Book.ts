@@ -15,8 +15,8 @@ export class Book {
     public id: string,
     public title: string,
     public totalPages: number,
-    public bookmark: number,
-    public percentCompleted: number
+    public bookmarkPropertyId: string,
+    public percentCompletedPropertyId: string
   ) {}
 
   public createBookmark(pageNumber: number) {
@@ -68,6 +68,36 @@ export class Book {
   public async getReadingDays() {
     const readingSessions = await this.getProgress()
     return getReadingDays(readingSessions)
+  }
+
+  public async getPercentCompleted() {
+    const result = await NotionClient.client.pages.properties.retrieve({
+      page_id: this.id,
+      property_id: this.percentCompletedPropertyId,
+    })
+
+    return (
+      (result.type === 'property_item' &&
+        result.property_item.type === 'rollup' &&
+        result.property_item.rollup.type === 'number' &&
+        result.property_item.rollup.number) ||
+      0
+    )
+  }
+
+  public async getBookmark() {
+    const result = await NotionClient.client.pages.properties.retrieve({
+      page_id: this.id,
+      property_id: this.bookmarkPropertyId,
+    })
+
+    return (
+      (result.type === 'property_item' &&
+        result.property_item.type === 'rollup' &&
+        result.property_item.rollup.type === 'number' &&
+        result.property_item.rollup.number) ||
+      0
+    )
   }
 
   static async getCurrentBook(): Promise<Book | null> {
@@ -124,18 +154,16 @@ export class Book {
         ? book.properties.Pages.number || 0
         : 0
 
-    const bookmark =
-      book.properties.Bookmark?.type === 'rollup' &&
-      book.properties.Bookmark.rollup.type === 'number'
-        ? book.properties.Bookmark.rollup.number || 0
-        : 0
+    const bookmarkPropertyId = book.properties.Bookmark?.id
 
-    const percentCompleted =
-      book.properties['Completed %']?.type === 'rollup' &&
-      book.properties['Completed %'].rollup.type === 'number'
-        ? book.properties['Completed %'].rollup.number || 0
-        : 0
+    const percentCompletedPropertyId = book.properties['Completed %'].id
 
-    return new Book(book.id, title, totalPages, bookmark, percentCompleted)
+    return new Book(
+      book.id,
+      title,
+      totalPages,
+      bookmarkPropertyId,
+      percentCompletedPropertyId
+    )
   }
 }

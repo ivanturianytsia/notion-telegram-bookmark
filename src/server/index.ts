@@ -32,9 +32,32 @@ export const launchServer = (bots?: Bot[]) => {
     try {
       const authCookie = req.cookies.auth
 
-      let books: Book[] | null = null
+      let books:
+        | {
+            id: string
+            title: string
+            totalPages: number
+            bookmark: number
+            percentCompleted: number
+          }[]
+        | null = null
       if (authCookie === PASSWORD) {
-        books = await Book.getCurrentBooks()
+        const bookResults = await Book.getCurrentBooks()
+        await Promise.all(
+          bookResults.map(async (book) => {
+            const bookmark = (await book.getBookmark()) || 0
+            if (!books) {
+              books = []
+            }
+            books.push({
+              id: book.id,
+              title: book.title,
+              totalPages: book.totalPages,
+              bookmark,
+              percentCompleted: Math.round((bookmark * 100) / book.totalPages),
+            })
+          })
+        )
       }
 
       res.render('index', {
