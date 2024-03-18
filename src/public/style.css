@@ -34,8 +34,75 @@ body {
   margin-bottom: 1rem;
 }
 
-.book {
+.book > h2,
+.book > p {
   padding: 0 2rem;
+}
+
+.book > *:not(:last-child) {
+  margin-bottom: 1rem;
+}
+
+.bookmark__options {
+  width: 100%;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: row;
+  padding: 0 2rem;
+
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.bookmark__options::-webkit-scrollbar {
+  display: none;
+}
+
+.bookmark__options > input {
+  position: fixed;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bookmark__options > label {
+  display: block;
+  width: 3rem;
+  border: solid 1px lightgray;
+  flex-shrink: 0;
+  text-align: center;
+  padding: 0.5rem 0;
+  cursor: pointer;
+  border-radius: 0.2rem;
+}
+
+.bookmark__options > label:not(:last-child) {
+  margin-right: 0.2rem;
+}
+
+.bookmark__options > input:checked+label {
+  color: orangered;
+  border-color: orangered;
+}
+
+.form__submit {
+  padding-left: 2rem;
+  padding-top: 1rem;
+}
+
+input[type="submit"] {
+  padding: 0.5rem 1.5rem;
+  background-color: #fff;
+  border: solid 1px lightgray;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+input[type="submit"]:hover {
+  border-color: gray;
+}
+
+input[type="submit"]:active {
+  border-color: orangered;
 }
 
 .tag {

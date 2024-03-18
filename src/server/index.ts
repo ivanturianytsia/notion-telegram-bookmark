@@ -39,6 +39,7 @@ export const launchServer = (bots?: Bot[]) => {
             totalPages: number
             bookmark: number
             percentCompleted: number
+            pageOptions: number[]
           }[]
         | null = null
       if (authCookie === PASSWORD) {
@@ -55,6 +56,10 @@ export const launchServer = (bots?: Bot[]) => {
               totalPages: book.totalPages,
               bookmark,
               percentCompleted: Math.round((bookmark * 100) / book.totalPages),
+              pageOptions: Array.from(
+                { length: Math.min(50, book.totalPages - bookmark) },
+                (_, i) => bookmark + 1 + i
+              ),
             })
           })
         )
