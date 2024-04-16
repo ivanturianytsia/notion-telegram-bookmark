@@ -58,4 +58,4 @@ jobs:
         run: scp .env root@$DROPLET_IP:/root/.env
       - name: Deploy to Remote Server
         run: |
-          ssh root@$DROPLET_IP 'docker run -p 3000:3000 --name notion-telegram-bookmark --env-file .env -d ${{ steps.tag.outputs.tag }}'
+          ssh root@$DROPLET_IP 'docker run -p 3000:3000 --name notion-telegram-bookmark --env-file .env -d --restart unless-stopped ${{ steps.tag.outputs.tag }}'
