@@ -27,11 +27,15 @@ export class GratitudeBot extends Bot {
       ? new ChatGptResponseGenerator()
       : new PlainResponseGenerator()
 
-    this.task = cron.schedule(this.NOTIFICATION_FREQUENCY, () => {
-      this.sendReminder().catch((err) => {
-        console.error('An error occured while sending reminder:', err)
-      })
-    })
+    this.task = cron.schedule(
+      this.NOTIFICATION_FREQUENCY,
+      () => {
+        this.sendReminder().catch((err) => {
+          console.error('An error occured while sending reminder:', err)
+        })
+      },
+      { scheduled: false }
+    )
 
     this.bot.start((ctx) => {
       this.sendMessage(
@@ -58,6 +62,11 @@ export class GratitudeBot extends Bot {
           console.error('An error occured while generating response:', err)
         })
     })
+  }
+
+  init() {
+    this.task.start()
+    console.log(`Bot ${this.id} cron job started.`)
   }
 
   async handleNewUser(chatId: number, incomingMessage: string) {

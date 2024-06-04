@@ -52,6 +52,7 @@ export class Bot {
   }
 
   launch() {
+    this.init()
     this.bot.launch()
     console.log(`Bot ${this.id} is ready! (polling mode)`)
   }
@@ -60,14 +61,14 @@ export class Bot {
     if (!DOMAIN) {
       throw new Error(`DOMAIN for ${this.id} is not set.`)
     }
-    const port = !isNaN(parseInt(WEBHOOK_PORT!))
-      ? parseInt(WEBHOOK_PORT!)
-      : 3001
 
     console.log(`Bot ${this.id} is starting! (webhook mode)`)
+    this.init()
     this.bot.telegram.setWebhook(`https://${DOMAIN}/bot/webhook/${this.id}`)
     return this.bot.webhookCallback(webhookPath)
   }
+
+  init() {}
 }
 
 export type TextHandler = (
