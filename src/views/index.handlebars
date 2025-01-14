@@ -9,8 +9,8 @@
       <form action="/record" method="post">
         <div class="bookmark__options">
           {{#each this.pageOptions}}
-            <input type="radio" id="page-option-{{this}}" name="page" value="{{this}}" />
-            <label for="page-option-{{this}}">{{this}}</label>
+            <input type="radio" id="page-option-{{../id}}-{{this}}" name="page" value="{{this}}" />
+            <label for="page-option-{{../id}}-{{this}}">{{this}}</label>
           {{/each}}
         </div>
         <input type="hidden" name="book" id="book" value="{{{this.id}}}">
