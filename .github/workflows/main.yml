@@ -22,7 +22,7 @@ jobs:
       PASSWORD: ${{ secrets.PASSWORD }}
     steps:
       - run: echo "Deploying to DigitalOcean..."
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Generate tag
         id: tag
         run: echo "tag=notion-telegram-bookmark:$(date +%Y%m%d)-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
@@ -31,7 +31,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "$PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H $DROPLET_IP >> ~/.ssh/known_hosts
+          ssh-keyscan -t ed25519 -H $DROPLET_IP >> ~/.ssh/known_hosts
       - name: Build the Docker image
         run: docker build . --file Dockerfile --tag ${{ steps.tag.outputs.tag }} --build-arg TAG=${{ steps.tag.outputs.tag }}
       - name: Remove old containers
@@ -58,4 +58,4 @@ jobs:
         run: scp .env root@$DROPLET_IP:/root/.env
       - name: Deploy to Remote Server
         run: |
-          ssh root@$DROPLET_IP 'docker run -p 3000:3000 --name notion-telegram-bookmark --env-file .env -d --restart unless-stopped ${{ steps.tag.outputs.tag }}'
+          ssh root@$DROPLET_IP 'docker run -p 127.0.0.1:3000:3000 --name notion-telegram-bookmark --env-file .env -d --restart unless-stopped ${{ steps.tag.outputs.tag }}'

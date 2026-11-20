@@ -1,3 +1,4 @@
+import { isFullPage } from '@notionhq/client'
 import { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import { NotionClient } from '../../clients/notion'
 
@@ -7,7 +8,7 @@ export class ReadingSession {
   constructor(
     public percentCompleted: number,
     public date: string,
-    public endPage: number
+    public endPage: number,
   ) {}
 
   static async getReadingSessionsForBook(bookId: string) {
@@ -23,7 +24,7 @@ export class ReadingSession {
 
     return results
       .map((result) => {
-        if ('properties' in result) {
+        if (isFullPage(result)) {
           return ReadingSession.fromNotion(result)
         }
 

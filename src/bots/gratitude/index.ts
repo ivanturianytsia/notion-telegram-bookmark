@@ -27,20 +27,16 @@ export class GratitudeBot extends Bot {
       ? new ChatGptResponseGenerator()
       : new PlainResponseGenerator()
 
-    this.task = cron.schedule(
-      this.NOTIFICATION_FREQUENCY,
-      () => {
-        this.sendReminder().catch((err) => {
-          console.error('An error occured while sending reminder:', err)
-        })
-      },
-      { scheduled: false }
-    )
+    this.task = cron.createTask(this.NOTIFICATION_FREQUENCY, () => {
+      this.sendReminder().catch((err) => {
+        console.error('An error occured while sending reminder:', err)
+      })
+    })
 
     this.bot.start((ctx) => {
       this.sendMessage(
         ctx.chat.id,
-        `Hi! I'm a bot that helps you practice gratitude. What's your name?`
+        `Hi! I'm a bot that helps you practice gratitude. What's your name?`,
       ).catch((err) => {
         console.error('An error occured while welcoming:', err)
       })
@@ -87,7 +83,7 @@ export class GratitudeBot extends Bot {
 
     const response = await this.responseGenerator.newRecord(
       user.name,
-      incomingMessage
+      incomingMessage,
     )
     console.log('New record added:', {
       time: new Date(),
@@ -110,7 +106,7 @@ export class GratitudeBot extends Bot {
       const response = await this.responseGenerator.shareWithFriends(
         user.name,
         friend.name,
-        incomingMessage
+        incomingMessage,
       )
       if (response) {
         console.log('Sharing record with friends:', {
@@ -145,7 +141,7 @@ export class GratitudeBot extends Bot {
 
       const response = await this.responseGenerator.reminder(
         user.name,
-        records.map((record) => record.content)
+        records.map((record) => record.content),
       )
       console.log('Sending reminder:', {
         time: new Date(),

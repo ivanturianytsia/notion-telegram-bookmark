@@ -1,29 +1,34 @@
-# Use a base image with Node.js installed
-FROM node:16.19.0-alpine
+# Build stage: install all dependencies, compile TypeScript and run the tests
+FROM node:22-alpine AS build
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if present) to the working directory
 COPY package*.json ./
+RUN npm ci
 
-# Install project dependencies
-RUN npm install
-
-# Copy the rest of the project files to the working directory
 COPY . .
 
-ARG TAG=unknown
-
-ENV TAG=$TAG
-
-# Build the TypeScript code
-RUN npm run build
+RUN npx tsc && npm run copy
 
 RUN npm test
 
-# Expose the desired port(s) for your application
+# Runtime stage: production dependencies and compiled code only
+FROM node:22-alpine
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+COPY --from=build /app/dist ./dist
+
+ARG TAG=unknown
+ENV TAG=$TAG
+
+USER node
+
 EXPOSE 3000
 
-# Define the command to start your application
-CMD [ "npm", "run", "start:prod" ]
+CMD [ "node", "./dist/index.js" ]

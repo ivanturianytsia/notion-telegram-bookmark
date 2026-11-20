@@ -1,4 +1,4 @@
-import { Configuration, OpenAIApi } from 'openai'
+import OpenAI from 'openai'
 import { TextHandler } from '../bot'
 import { OPENAI_TOKEN } from '../../constants'
 
@@ -17,7 +17,7 @@ export const fluentBotHandler: TextHandler = async (ctx) => {
       text,
     }
   } catch (err: any) {
-    if (err.response?.status === 429) {
+    if (err?.status === 429) {
       return {
         text: `I can only handle 3 requests per minute. Please try again later.`,
       }
@@ -31,12 +31,9 @@ export const fluentBotHandler: TextHandler = async (ctx) => {
 }
 
 async function getCompletion(prompt: string) {
-  const configuration = new Configuration({
-    apiKey: OPENAI_TOKEN,
-  })
-  const openai = new OpenAIApi(configuration)
+  const openai = new OpenAI({ apiKey: OPENAI_TOKEN })
 
-  const result = await openai.createChatCompletion({
+  const result = await openai.chat.completions.create({
     model: 'gpt-3.5-turbo',
     messages: [
       {
@@ -52,5 +49,5 @@ async function getCompletion(prompt: string) {
     temperature: 0,
   })
 
-  return result.data.choices[0].message?.content!
+  return result.choices[0].message?.content!
 }

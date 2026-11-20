@@ -1,10 +1,11 @@
 import path from 'path'
+import { createHmac, timingSafeEqual } from 'crypto'
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import { engine } from 'express-handlebars'
 
 import { Bot } from '../bots/bot'
-import { PASSWORD, PORT, TAG } from '../constants'
+import { IS_PRODUCTION, PASSWORD, PORT, TAG } from '../constants'
 import { Book } from '../bots/notion-bookmark/Book'
 import { parsePageNumber } from '../helpers'
 
@@ -12,6 +13,10 @@ export const launchServer = (bots?: Bot[]) => {
   const port = PORT || 3000
 
   const app = express()
+
+  app.disable('x-powered-by')
+  // nginx on the same host terminates TLS and forwards requests.
+  app.set('trust proxy', 'loopback')
 
   app.engine('handlebars', engine())
   app.set('view engine', 'handlebars')
@@ -30,8 +35,6 @@ export const launchServer = (bots?: Bot[]) => {
 
   app.get('/', async (req, res) => {
     try {
-      const authCookie = req.cookies.auth
-
       let books:
         | {
             id: string
@@ -42,7 +45,8 @@ export const launchServer = (bots?: Bot[]) => {
             pageOptions: number[]
           }[]
         | null = null
-      if (authCookie === PASSWORD) {
+      const isLoggedIn = isAuthenticated(req)
+      if (isLoggedIn) {
         const bookResults = await Book.getCurrentBooks()
         await Promise.all(
           bookResults.map(async (book) => {
@@ -58,15 +62,16 @@ export const launchServer = (bots?: Bot[]) => {
               percentCompleted: Math.round((bookmark * 100) / book.totalPages),
               pageOptions: Array.from(
                 { length: Math.min(50, book.totalPages - bookmark) },
-                (_, i) => bookmark + 1 + i
+                (_, i) => bookmark + 1 + i,
               ),
             })
-          })
+          }),
         )
       }
 
       res.render('index', {
         tag: TAG || 'unknown',
+        isLoggedIn,
         books,
       })
     } catch (err: any) {
@@ -75,18 +80,13 @@ export const launchServer = (bots?: Bot[]) => {
     }
   })
 
-  app.get('/login', (req, res) => {
-    if (req.query.password !== PASSWORD) {
-      renderError(res, 'Access denied.')
-      return
-    }
-    res.cookie('auth', req.query.password, { maxAge: 1000 * 60 * 60 * 24 * 14 })
-    res.redirect('/')
-  })
+  // GET keeps old login links working; the page's login form uses POST.
+  app.get('/login', (req, res) => logIn(req.query.password, res))
+  app.post('/login', (req, res) => logIn(req.body.password, res))
 
   app.post('/record', async (req, res) => {
     try {
-      if (req.cookies.auth !== PASSWORD) {
+      if (!isAuthenticated(req)) {
         throw new Error('Access denied.')
       }
 
@@ -131,9 +131,49 @@ export const launchServer = (bots?: Bot[]) => {
     console.log(`Express app listening on http://localhost:${port}`)
   })
 
+  function logIn(password: unknown, res: express.Response) {
+    if (
+      !PASSWORD ||
+      typeof password !== 'string' ||
+      !safeEqual(password, PASSWORD)
+    ) {
+      renderError(res, 'Access denied.')
+      return
+    }
+    res.cookie(SESSION_COOKIE_NAME, sessionToken(PASSWORD), {
+      maxAge: SESSION_MAX_AGE_MS,
+      httpOnly: true,
+      secure: IS_PRODUCTION,
+      sameSite: 'lax',
+    })
+    res.redirect('/')
+  }
+
   function renderError(res: express.Response, message: string) {
     res.render('error', {
       errorMessage: message,
     })
   }
+}
+
+const SESSION_COOKIE_NAME = 'auth'
+const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 14
+
+// The session cookie holds an HMAC of the password, never the password itself.
+function sessionToken(password: string) {
+  return createHmac('sha256', password).update('ntbb-session').digest('hex')
+}
+
+function isAuthenticated(req: express.Request) {
+  const cookieValue = req.cookies[SESSION_COOKIE_NAME]
+  if (!PASSWORD || typeof cookieValue !== 'string') {
+    return false
+  }
+  return safeEqual(cookieValue, sessionToken(PASSWORD))
+}
+
+function safeEqual(a: string, b: string) {
+  const aBuffer = Buffer.from(a)
+  const bBuffer = Buffer.from(b)
+  return aBuffer.length === bBuffer.length && timingSafeEqual(aBuffer, bBuffer)
 }
