@@ -45,8 +45,7 @@ export const launchServer = (bots?: Bot[]) => {
             pageOptions: number[]
           }[]
         | null = null
-      const isLoggedIn = isAuthenticated(req)
-      if (isLoggedIn) {
+      if (isAuthenticated(req)) {
         const bookResults = await Book.getCurrentBooks()
         await Promise.all(
           bookResults.map(async (book) => {
@@ -71,7 +70,6 @@ export const launchServer = (bots?: Bot[]) => {
 
       res.render('index', {
         tag: TAG || 'unknown',
-        isLoggedIn,
         books,
       })
     } catch (err: any) {
@@ -80,9 +78,7 @@ export const launchServer = (bots?: Bot[]) => {
     }
   })
 
-  // GET keeps old login links working; the page's login form uses POST.
   app.get('/login', (req, res) => logIn(req.query.password, res))
-  app.post('/login', (req, res) => logIn(req.body.password, res))
 
   app.post('/record', async (req, res) => {
     try {
